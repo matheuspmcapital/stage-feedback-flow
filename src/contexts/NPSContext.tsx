@@ -1,11 +1,10 @@
-
 import React, { createContext, useContext, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
 export interface NPSData {
   userName: string;
-  code: string;  // Add code property to the interface
+  code: string;
   recommendScore: number;
   recommendReason: string;
   rehireScore: number;
@@ -21,9 +20,10 @@ interface NPSContextType {
   npsData: NPSData;
   userName: string;
   code: string;
-  codeValidated: boolean;  // Add codeValidated property to the interface
+  codeValidated: boolean;
   setUserName: (name: string) => void;
   setCode: (code: string) => void;
+  setCodeValidated: (validated: boolean) => void;
   setRecommendScore: (score: number) => void;
   setRecommendReason: (reason: string) => void;
   setRehireScore: (score: number) => void;
@@ -35,7 +35,7 @@ interface NPSContextType {
 
 const initialData: NPSData = {
   userName: "",
-  code: "",  // Initialize code property
+  code: "",
   recommendScore: 0,
   recommendReason: "",
   rehireScore: 0,
@@ -49,27 +49,17 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
   const [npsData, setNpsData] = useState<NPSData>(initialData);
   const [userName, setUserName] = useState("");
   const [code, setCode] = useState("");
-  const [codeValidated, setCodeValidated] = useState(false);  // Add codeValidated state
+  const [codeValidated, setCodeValidated] = useState(false);
   const { toast } = useToast();
 
-  // Update npsData when userName or code changes
   React.useEffect(() => {
     setNpsData(prev => ({ ...prev, userName, code }));
   }, [userName, code]);
 
-  // Update codeValidated when code is set
-  React.useEffect(() => {
-    if (code) {
-      setCodeValidated(true);
-    }
-  }, [code]);
-
-  // Helper function to record each step of the survey
   const recordStep = async (questionId: string, answer: any) => {
     try {
       if (!code) return;
       
-      // Get the survey code record
       const { data: codeData, error: codeError } = await supabase
         .from('survey_codes')
         .select('id')
@@ -80,7 +70,6 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         throw new Error("Invalid survey code");
       }
       
-      // Insert the answer
       const { error } = await supabase
         .from('survey_answers')
         .insert({
@@ -121,12 +110,10 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
     recordStep("can_publish", canPublish);
   };
 
-  // Submit all responses and mark survey as complete
   const submitResponses = async (): Promise<boolean> => {
     try {
       if (!code) return false;
       
-      // Mark the survey code as completed
       const { error } = await supabase
         .from('survey_codes')
         .update({ completed_at: new Date().toISOString() })
@@ -134,7 +121,6 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
       
       if (error) throw error;
       
-      // Record the final submission
       await recordStep("submission", { submitted: true });
       
       return true;
@@ -158,6 +144,7 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         codeValidated,
         setUserName,
         setCode,
+        setCodeValidated,
         setRecommendScore,
         setRecommendReason,
         setRehireScore,

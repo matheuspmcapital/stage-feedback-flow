@@ -52,7 +52,7 @@ export interface Response {
   testimonial: string;
   canPublish: boolean;
   submittedAt: string;
-  serviceType: string;  // Added this property
+  serviceType: string;
 }
 
 export interface AdminUser {
@@ -74,9 +74,13 @@ const AdminDashboard: React.FC = () => {
   const [userRole, setUserRole] = useState<string>("partner");
   const { toast } = useToast();
   
-  const handleLogout = () => {
-    localStorage.removeItem('adminSession');
-    window.location.href = "/";
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
   
   // Format date to dd/mm/yy HH:MM:SS
@@ -134,7 +138,6 @@ const AdminDashboard: React.FC = () => {
             .single();
           
           if (!userError && userData) {
-            // Set role from userData if it exists, otherwise default to 'partner'
             setUserRole(userData.role || 'partner');
           }
         }
@@ -211,7 +214,7 @@ const AdminDashboard: React.FC = () => {
         
         if (adminUsersError) throw adminUsersError;
         
-        // Transform admin users data
+        // Transform admin users data with roles
         const transformedAdminUsers: AdminUser[] = (adminUsersData || []).map(user => ({
           id: user.id,
           email: user.email,
@@ -287,7 +290,7 @@ const AdminDashboard: React.FC = () => {
     fetchData();
   }, [toast]);
   
-  const handleCodeGenerated = async (newCode: Code) => {
+  const handleCodeGenerated = (newCode: Code) => {
     setCodes([newCode, ...codes]);
   };
   
@@ -403,7 +406,10 @@ const AdminDashboard: React.FC = () => {
             <Card>
               <CardContent className="pt-6">
                 <h3 className="text-lg font-semibold mb-4">Recent Survey Codes</h3>
-                <CodesList codes={codes.slice(0, 5)} formatDate={formatDate} />
+                <CodesList 
+                  codes={codes.slice(0, 5)} 
+                  formatDate={formatDate}
+                />
                 <div className="mt-4 flex justify-center">
                   <button 
                     className="text-sm text-blue-500" 
@@ -463,24 +469,26 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <SidebarProvider>
-      <div className="flex w-full">
+      <div className="flex w-full h-screen overflow-hidden">
         <AdminSidebar 
           activeSection={activeSection}
           onSectionChange={setActiveSection}
           onLogout={handleLogout}
-          userEmail={adminUsers.find(u => u.role === userRole)?.email || ''}
+          userEmail={session?.user?.email || adminUsers.find(u => u.role === userRole)?.email || ''}
           userRole={userRole}
         />
 
         <SidebarInset className="h-screen overflow-auto">
           <div className="container mx-auto p-6">
-            <h1 className="text-2xl font-bold mb-6">
-              {activeSection === "dashboard" && "Dashboard"}
-              {activeSection === "generatedCodes" && "Generated Codes"}
-              {activeSection === "projects" && "Projects"}
-              {activeSection === "companies" && "Companies"}
-              {activeSection === "adminUsers" && "Admin Users"}
-            </h1>
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold">
+                {activeSection === "dashboard" && "Dashboard"}
+                {activeSection === "generatedCodes" && "Generated Codes"}
+                {activeSection === "projects" && "Projects"}
+                {activeSection === "companies" && "Companies"}
+                {activeSection === "adminUsers" && "Admin Users"}
+              </h1>
+            </div>
             
             {renderContent()}
           </div>

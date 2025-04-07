@@ -9,9 +9,24 @@ const Admin = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
+  const [session, setSession] = useState(null);
   
   // Check if session exists in Supabase Auth
   useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          setIsLoggedIn(true);
+          setSession(session);
+        } else if (event === 'SIGNED_OUT') {
+          setIsLoggedIn(false);
+          setSession(null);
+        }
+      }
+    );
+    
+    // THEN check for existing session
     const checkSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -20,7 +35,27 @@ const Admin = () => {
           console.error("Error checking session:", error);
           setIsLoggedIn(false);
         } else if (session) {
+          setSession(session);
           setIsLoggedIn(true);
+
+          // Check if this user exists in admin_users
+          const { data, error: userError } = await supabase
+            .from('admin_users')
+            .select('*')
+            .eq('email', session.user.email)
+            .maybeSingle();
+
+          if (userError || !data) {
+            // If not in admin_users table, sign out
+            await supabase.auth.signOut();
+            setIsLoggedIn(false);
+            setSession(null);
+            toast({
+              variant: "destructive",
+              title: "Access Denied",
+              description: "You don't have admin access. Please contact support."
+            });
+          }
         } else {
           setIsLoggedIn(false);
         }
@@ -34,38 +69,10 @@ const Admin = () => {
     
     checkSession();
     
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          setIsLoggedIn(true);
-        } else if (event === 'SIGNED_OUT') {
-          setIsLoggedIn(false);
-        }
-      }
-    );
-    
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
-  
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      setIsLoggedIn(false);
-      toast({
-        title: "Logged out successfully",
-      });
-    } catch (error) {
-      console.error("Error signing out:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to log out. Please try again.",
-      });
-    }
-  };
+  }, [toast]);
 
   if (isLoading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;

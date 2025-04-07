@@ -52,7 +52,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
         <img
           src="https://nps.stage.consulting/_next/static/media/stg-home.0a1c9367.svg"
           alt="Stage Consulting"
-          className="w-48 mb-8" 
+          className="w-32 mb-8" 
         />
         <h1 className="text-3xl font-bold text-center mb-2">{t("welcome")}</h1>
         <p className="text-lg text-center text-muted-foreground mb-6">

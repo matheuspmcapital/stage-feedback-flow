@@ -29,7 +29,7 @@ enum Step {
 const NPSFlow: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<Step>(Step.Welcome);
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
-  const { npsData, codeValidated, setCode, setCodeValidated } = useNPS();
+  const { npsData, code, codeValidated, setCode, setCodeValidated } = useNPS();
   const { toast } = useToast();
   const [isCheckingCode, setIsCheckingCode] = useState(true);
   
