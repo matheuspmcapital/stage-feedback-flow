@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Eye, ClipboardCopy } from "lucide-react";
+import { Eye, ClipboardCopy, Link } from "lucide-react";
 
 interface GeneratedCodesProps {
   codes: Code[];
@@ -60,8 +59,6 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
 
   // Calculate time spent for each code
   const calculateTimeSpent = (code: Code): string => {
-
-    
     if (!code.started_at || !code.completed_at) return "--";
     
     const startTime = new Date(code.started_at).getTime();
@@ -79,6 +76,21 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
       toast({
         title: "Copied to Clipboard",
         description: `Code "${code}" copied successfully.`
+      });
+    });
+  };
+  
+  const handleCopyUrl = (code: Code) => {
+    // Get the base URL
+    const baseUrl = window.location.origin;
+    // Create the full URL with parameters
+    const language = code.language || "pt"; // Default to pt if not set
+    const fullUrl = `${baseUrl}/?lang=${language}&code=${code.code}`;
+    
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      toast({
+        title: "URL Copied to Clipboard",
+        description: `Survey URL copied successfully.`
       });
     });
   };
@@ -243,7 +255,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                     Generated {sortField === "generated_at" && <ArrowUpDown className="ml-2 h-4 w-4 inline" />}
                   </TableHead>
                   <TableHead className="hidden lg:table-cell">Time Spent</TableHead>
-                  <TableHead className="w-[80px]"></TableHead>
+                  <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -298,13 +310,23 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                       {calculateTimeSpent(code)}
                     </TableCell>
                     <TableCell>
-                      <Button 
-                        onClick={() => setSelectedCode(code)} 
-                        variant="ghost" 
-                        className="flex h-8 p-2 data-[state=open]:bg-muted"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex">
+                        <Button 
+                          onClick={() => setSelectedCode(code)} 
+                          variant="ghost" 
+                          className="flex h-8 p-2"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          onClick={() => handleCopyUrl(code)} 
+                          variant="ghost" 
+                          className="flex h-8 p-2"
+                          title="Copy survey URL"
+                        >
+                          <Link className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

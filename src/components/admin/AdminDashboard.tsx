@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import NPSChart from "./NPSChart";
@@ -54,6 +53,7 @@ export interface Code {
   project_name?: string;
   company_name?: string;
   service_type: string;
+  language?: string;
   generated_at: string;
   started_at: string | null;
   completed_at: string | null;
@@ -203,6 +203,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
           project_name: code.projects ? code.projects.name : 'Unknown',
           company_name: code.projects && code.projects.companies ? code.projects.companies.name : 'Unknown',
           service_type: code.service_type,
+          language: code.language || 'pt',
           generated_at: code.generated_at,
           started_at: code.started_at,
           completed_at: code.completed_at

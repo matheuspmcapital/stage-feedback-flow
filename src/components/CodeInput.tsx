@@ -33,12 +33,12 @@ const CodeInput: React.FC<CodeInputProps> = ({ onValidCode, prefilledCode = "" }
     }
   };
 
-  // Auto-submit the code if it was prefilled
+  // Update input code when prefilledCode changes
   useEffect(() => {
     if (prefilledCode) {
-      validateCode();
+      setInputCode(prefilledCode);
     }
-  }, []);
+  }, [prefilledCode]);
 
   return (
     <>

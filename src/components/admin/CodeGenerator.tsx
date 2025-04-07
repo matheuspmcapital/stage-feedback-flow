@@ -26,6 +26,7 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
   const [email, setEmail] = useState("");
   const [projectId, setProjectId] = useState("");
   const [serviceType, setServiceType] = useState("experience");
+  const [language, setLanguage] = useState("pt"); // Default language: Portuguese
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -83,7 +84,8 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
           name,
           email,
           project_id: projectId,
-          service_type: serviceType
+          service_type: serviceType,
+          language // Store the selected language
         })
         .select(`
           *,
@@ -107,6 +109,7 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
           project_name: data.projects?.name,
           company_name: data.projects?.companies?.name,
           service_type: data.service_type,
+          language: data.language, // Include language in the returned code
           generated_at: data.generated_at,
           started_at: data.started_at,
           completed_at: data.completed_at
@@ -124,6 +127,7 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
         setEmail("");
         setProjectId("");
         setServiceType("experience");
+        setLanguage("pt");
       }
       
     } catch (error: any) {
@@ -187,6 +191,23 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="strategy" id="strategy" />
             <Label htmlFor="strategy">Strategy</Label>
+          </div>
+        </RadioGroup>
+      </div>
+      <div className="space-y-2">
+        <Label>Language</Label>
+        <RadioGroup value={language} onValueChange={setLanguage}>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="pt" id="portuguese" />
+            <Label htmlFor="portuguese">Portuguese</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="en" id="english" />
+            <Label htmlFor="english">English</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="es" id="spanish" />
+            <Label htmlFor="spanish">Spanish</Label>
           </div>
         </RadioGroup>
       </div>

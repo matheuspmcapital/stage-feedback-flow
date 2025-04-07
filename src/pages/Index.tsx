@@ -14,7 +14,7 @@ const Index = () => {
   const codeParam = searchParams.get("code");
   const langParam = searchParams.get("lang") as "pt" | "en" | "es" | null;
   const [hasValidCode, setHasValidCode] = useState(false);
-  const [isLoading, setIsLoading] = useState(!!codeParam);
+  const [isLoading, setIsLoading] = useState(false);
   const { setUserName, setCode, setCodeValidated } = useNPS();
   const { setLanguage } = useLanguage();
   const { toast } = useToast();
@@ -71,17 +71,6 @@ const Index = () => {
       setIsLoading(false);
     }
   };
-
-  // Check code from URL param on component mount
-  useEffect(() => {
-    if (codeParam) {
-      validateCode(codeParam).then(isValid => {
-        if (isValid) {
-          setHasValidCode(true);
-        }
-      });
-    }
-  }, [codeParam]);
 
   // Handle code input validation
   const handleValidCode = async (inputCode: string) => {
