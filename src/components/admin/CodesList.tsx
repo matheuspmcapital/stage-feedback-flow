@@ -17,15 +17,11 @@ import { useToast } from "@/components/ui/use-toast";
 
 interface CodesListProps {
   codes: Code[];
+  formatDate: (dateString: string | undefined) => string;
 }
 
-const CodesList: React.FC<CodesListProps> = ({ codes }) => {
+const CodesList: React.FC<CodesListProps> = ({ codes, formatDate }) => {
   const { toast } = useToast();
-  
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString();
-  };
   
   const handleViewCode = (code: Code) => {
     // In a full implementation, this would navigate to a details page

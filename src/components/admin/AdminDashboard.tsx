@@ -52,6 +52,7 @@ export interface Response {
   testimonial: string;
   canPublish: boolean;
   submittedAt: string;
+  serviceType: string;  // Added this property
 }
 
 export interface AdminUser {
@@ -128,12 +129,13 @@ const AdminDashboard: React.FC = () => {
         if (userEmail) {
           const { data: userData, error: userError } = await supabase
             .from('admin_users')
-            .select('role')
+            .select('*')
             .eq('email', userEmail.toLowerCase())
             .single();
           
           if (!userError && userData) {
-            setUserRole(userData.role);
+            // Set role from userData if it exists, otherwise default to 'partner'
+            setUserRole(userData.role || 'partner');
           }
         }
         
@@ -204,11 +206,20 @@ const AdminDashboard: React.FC = () => {
         // Fetch admin users
         const { data: adminUsersData, error: adminUsersError } = await supabase
           .from('admin_users')
-          .select('id, email, role, created_at')
+          .select('*')
           .order('email');
         
         if (adminUsersError) throw adminUsersError;
-        setAdminUsers(adminUsersData || []);
+        
+        // Transform admin users data
+        const transformedAdminUsers: AdminUser[] = (adminUsersData || []).map(user => ({
+          id: user.id,
+          email: user.email,
+          role: user.role || 'partner', // Default to 'partner' if role is null
+          created_at: user.created_at
+        }));
+        
+        setAdminUsers(transformedAdminUsers);
         
         // Fetch survey answers for NPS chart data
         const { data: answersData, error: answersError } = await supabase
@@ -440,7 +451,13 @@ const AdminDashboard: React.FC = () => {
       case "responses":
         return <ResponsesList responses={responses} />;
       default:
-        return renderDashboard();
+        return (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              {/* Dashboard content */}
+            </div>
+          </>
+        );
     }
   };
 

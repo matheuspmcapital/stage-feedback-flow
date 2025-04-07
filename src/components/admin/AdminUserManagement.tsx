@@ -154,7 +154,15 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
       if (error) throw error;
       
       if (data) {
-        onAdminUserAdded(data as AdminUser);
+        // Convert the result to AdminUser type
+        const newAdminUser: AdminUser = {
+          id: data.id,
+          email: data.email,
+          role: data.role || role,
+          created_at: data.created_at
+        };
+        
+        onAdminUserAdded(newAdminUser);
         
         toast({
           title: "Admin User Added",

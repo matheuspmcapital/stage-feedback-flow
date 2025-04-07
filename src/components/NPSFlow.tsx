@@ -29,40 +29,41 @@ enum Step {
 const NPSFlow: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<Step>(Step.Welcome);
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
-  const { npsData, codeValidated } = useNPS();
+  const { npsData, codeValidated, setCode, setCodeValidated } = useNPS();
   const { toast } = useToast();
   const [isCheckingCode, setIsCheckingCode] = useState(true);
   
   // Check if code has already been completed
   useEffect(() => {
     const checkCodeStatus = async () => {
-      if (codeValidated && npsData.code) {
-        try {
-          const { data, error } = await supabase
+      if (!npsData.code) {
+        setIsCheckingCode(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('survey_codes')
+          .select('completed_at')
+          .eq('code', npsData.code)
+          .single();
+        
+        if (error) {
+          console.error("Error checking code:", error);
+        } else if (data && data.completed_at) {
+          // If code was already completed, show the CodeUsed screen
+          setCurrentStep(Step.CodeUsed);
+        } else if (codeValidated) {
+          // If the code exists but hasn't been completed, mark it as started
+          const now = new Date().toISOString();
+          await supabase
             .from('survey_codes')
-            .select('completed_at')
-            .eq('code', npsData.code)
-            .single();
-          
-          if (error) {
-            console.error("Error checking code:", error);
-          } else if (data && data.completed_at) {
-            // If code was already completed, show the CodeUsed screen
-            setCurrentStep(Step.CodeUsed);
-          } else {
-            // If the code exists but hasn't been completed, mark it as started
-            const now = new Date().toISOString();
-            await supabase
-              .from('survey_codes')
-              .update({ started_at: now })
-              .eq('code', npsData.code);
-          }
-        } catch (err) {
-          console.error("Error checking code status:", err);
-        } finally {
-          setIsCheckingCode(false);
+            .update({ started_at: now })
+            .eq('code', npsData.code);
         }
-      } else {
+      } catch (err) {
+        console.error("Error checking code status:", err);
+      } finally {
         setIsCheckingCode(false);
       }
     };

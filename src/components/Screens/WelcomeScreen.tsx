@@ -6,6 +6,7 @@ import { useNPS } from "../../contexts/NPSContext";
 import CodeInput from "../CodeInput";
 import ProgressBar from "../ProgressBar";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WelcomeScreenProps {
   onNext: () => void;
@@ -13,7 +14,31 @@ interface WelcomeScreenProps {
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
   const { t } = useLanguage();
-  const { npsData, codeValidated } = useNPS();
+  const { npsData, codeValidated, setCode, setCodeValidated } = useNPS();
+
+  // Function to handle valid code submission
+  const handleValidCode = async (code: string) => {
+    // Validate code with Supabase
+    try {
+      const { data, error } = await supabase
+        .from('survey_codes')
+        .select('*')
+        .eq('code', code)
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setCode(code);
+        setCodeValidated(true);
+      }
+    } catch (error) {
+      console.error("Error validating code:", error);
+      throw error;
+    }
+  };
 
   return (
     <motion.div
@@ -27,7 +52,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
         <img
           src="https://nps.stage.consulting/_next/static/media/stg-home.0a1c9367.svg"
           alt="Stage Consulting"
-          className="w-64 mb-8" 
+          className="w-48 mb-8" 
         />
         <h1 className="text-3xl font-bold text-center mb-2">{t("welcome")}</h1>
         <p className="text-lg text-center text-muted-foreground mb-6">
@@ -38,7 +63,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
       <div className="space-y-6">
         <div className="bg-card rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">{t("enterYourCode")}</h2>
-          <CodeInput />
+          <CodeInput onValidCode={handleValidCode} />
         </div>
 
         <div className="mt-8">
