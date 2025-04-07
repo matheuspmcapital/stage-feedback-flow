@@ -14,7 +14,7 @@ interface WelcomeScreenProps {
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
   const { t } = useLanguage();
-  const { npsData, codeValidated, setCode, setCodeValidated } = useNPS();
+  const { npsData, codeValidated, setCode, setCodeValidated, setUserName } = useNPS();
 
   // Function to handle valid code submission
   const handleValidCode = async (code: string) => {
@@ -32,6 +32,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
       
       if (data) {
         setCode(code);
+        setUserName(data.name || '');
         setCodeValidated(true);
       }
     } catch (error) {

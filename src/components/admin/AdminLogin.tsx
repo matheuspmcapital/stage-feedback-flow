@@ -15,7 +15,6 @@ const AdminLogin: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [redirect, setRedirect] = useState(false);
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -28,34 +27,21 @@ const AdminLogin: React.FC = () => {
       }
       
       // Sign in with Supabase Auth
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: email.toLowerCase(),
         password: password
       });
       
       if (error) {
+        console.error("Authentication error:", error);
         throw new Error(error.message);
       }
       
-      // Successfully signed in, check if user is admin
-      const { data: adminUser, error: adminError } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('email', email.toLowerCase())
-        .maybeSingle();
-      
-      if (adminError || !adminUser) {
-        // If not an admin, sign out and show error
-        await supabase.auth.signOut();
-        throw new Error("You don't have admin access.");
-      }
-      
+      // The Admin.tsx component will handle the admin verification and redirection
       toast({
         title: "Login Successful",
-        description: "Welcome to the admin dashboard.",
+        description: "Checking admin access...",
       });
-      
-      setRedirect(true);
       
     } catch (error: any) {
       toast({
@@ -68,10 +54,6 @@ const AdminLogin: React.FC = () => {
       setIsLoggingIn(false);
     }
   };
-
-  if (redirect) {
-    return <Navigate to="/admin-stage" />;
-  }
 
   return (
     <motion.div 
@@ -110,7 +92,7 @@ const AdminLogin: React.FC = () => {
               className="w-full py-6"
               size="lg"
             >
-              {isLoggingIn ? "..." : t("login")}
+              {isLoggingIn ? t("loggingIn") : t("login")}
             </Button>
           </form>
         </CardContent>

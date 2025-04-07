@@ -112,28 +112,15 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
       setIsSubmitting(true);
       
       // First create user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.toLowerCase(),
         password: password,
-        email_confirm: true,
-        user_metadata: {
-          role: role
-        }
       });
       
-      if (authError) {
-        // If admin API fails, try regular signup
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: email.toLowerCase(),
-          password: password,
-          options: {
-            data: {
-              role: role
-            }
-          }
-        });
-        
-        if (signUpError) throw signUpError;
+      if (authError) throw authError;
+      
+      if (!authData.user) {
+        throw new Error("Failed to create user");
       }
       
       // Check if the email already exists in admin_users

@@ -12,7 +12,7 @@ const Index = () => {
   const codeParam = searchParams.get("code");
   const [hasValidCode, setHasValidCode] = useState(false);
   const [isLoading, setIsLoading] = useState(!!codeParam);
-  const { setUserName, setCode } = useNPS();
+  const { setUserName, setCode, setCodeValidated } = useNPS();
   const { toast } = useToast();
 
   // Validate code function
@@ -43,8 +43,9 @@ const Index = () => {
           .eq('id', data.id);
       }
       
-      setUserName(data.name);
+      setUserName(data.name || '');
       setCode(code);
+      setCodeValidated(true);
       return true;
       
     } catch (error) {
