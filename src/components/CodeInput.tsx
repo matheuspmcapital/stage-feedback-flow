@@ -51,7 +51,7 @@ const CodeInput: React.FC<CodeInputProps> = ({ onValidCode, prefilledCode = "" }
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
         className="z-10"
-        style={{width:'40%'}}
+        style={{width:'calc(100% - 32px)', maxWidth:"450px", margin:"0px 16px"}}
       >
         <Card className="w-full max-w-md backdrop-blur-sm bg-white/80 dark:bg-zinc-900/80 shadow-xl border border-white/20 dark:border-zinc-800/30">
           <CardHeader className="items-center">

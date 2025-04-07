@@ -91,6 +91,7 @@ const Index = () => {
   ) : (
     <AuroraBackground>
       <CodeInput onValidCode={handleValidCode} prefilledCode={codeParam || ""} />
+      <p style={{position:"absolute", bottom:"16px"}}>Developed by Stage Consulting</p>
     </AuroraBackground>
   );
 };

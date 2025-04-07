@@ -78,7 +78,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         <SidebarHeader>
           <div className="flex items-center gap-2 px-4 py-4">
             <Logo />
-            <span className="font-bold text-lg">Admin</span>
           </div>
         </SidebarHeader>
         
