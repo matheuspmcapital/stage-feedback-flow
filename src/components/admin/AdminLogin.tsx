@@ -8,6 +8,7 @@ import Logo from "../Logo";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import bcrypt from "bcryptjs";
 
 interface AdminLoginProps {
   onLogin: () => void;
@@ -25,8 +26,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
     setIsLoggingIn(true);
     
     try {
-      // In a real application, you would use Supabase Auth
-      // For this example, we'll use the admin_users table
       if (!email || !password) {
         throw new Error("Please enter both email and password.");
       }
@@ -38,16 +37,17 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         .single();
       
       if (error || !data) {
+        console.error("Login error:", error);
         throw new Error("Invalid login credentials.");
       }
       
-      // For demonstration purposes, we're doing password verification in the frontend
-      // In a real application, you should use Supabase Auth or a proper backend
-      // Password is already hashed in the database
-      if (data.password === '$2a$10$ZXfx6PtFILrLYGUxd2JxaefNdyOu6m1q3rgbHlF5MzKJVMGIrn0wu') {
-        // For the specific password '62aMVzL&qr$&n2' we're hardcoding the check
-        // as bcrypt may not work correctly in the frontend context
+      // For the specific hardcoded credentials in the requirements
+      if (email.toLowerCase() === 'matheus.pinheiro@stage.consulting' && password === '62aMVzL&qr$&n2') {
         onLogin();
+        toast({
+          title: "Login Successful",
+          description: "Welcome to the admin dashboard.",
+        });
       } else {
         throw new Error("Invalid login credentials.");
       }
