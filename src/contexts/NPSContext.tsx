@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
 export interface NPSData {
+  userName: string;  // Add userName to the interface
   recommendScore: number;
   recommendReason: string;
   rehireScore: number;
@@ -31,6 +32,7 @@ interface NPSContextType {
 }
 
 const initialData: NPSData = {
+  userName: "",  // Initialize userName
   recommendScore: 0,
   recommendReason: "",
   rehireScore: 0,
@@ -45,6 +47,11 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
   const [userName, setUserName] = useState("");
   const [code, setCode] = useState("");
   const { toast } = useToast();
+
+  // Update npsData when userName changes
+  React.useEffect(() => {
+    setNpsData(prev => ({ ...prev, userName }));
+  }, [userName]);
 
   // Helper function to record each step of the survey
   const recordStep = async (questionId: string, answer: any) => {

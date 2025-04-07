@@ -74,32 +74,34 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
       
       if (error) throw error;
       
-      // Transform the code data
-      const newCode: Code = {
-        id: data.id,
-        code: data.code,
-        name: data.name,
-        email: data.email,
-        project_id: data.project_id,
-        project_name: data.projects?.name,
-        company_name: data.projects?.companies?.name,
-        service_type: data.service_type,
-        generated_at: data.generated_at
-      };
-      
-      onCodeGenerated(newCode);
-      
-      toast({
-        title: "Code Generated",
-        description: `Code ${data.code} was created successfully.`
-      });
-      
-      // Reset form
-      setName("");
-      setEmail("");
-      setProjectId("");
-      setServiceType("experience");
-      setIsOpen(false);
+      if (data) {
+        // Transform the code data
+        const newCode: Code = {
+          id: data.id,
+          code: data.code,
+          name: data.name,
+          email: data.email,
+          project_id: data.project_id,
+          project_name: data.projects?.name,
+          company_name: data.projects?.companies?.name,
+          service_type: data.service_type,
+          generated_at: data.generated_at
+        };
+        
+        onCodeGenerated(newCode);
+        
+        toast({
+          title: "Code Generated",
+          description: `Code ${data.code} was created successfully.`
+        });
+        
+        // Reset form
+        setName("");
+        setEmail("");
+        setProjectId("");
+        setServiceType("experience");
+        setIsOpen(false);
+      }
       
     } catch (error: any) {
       toast({

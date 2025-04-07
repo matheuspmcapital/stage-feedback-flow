@@ -11,15 +11,8 @@ import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 
 interface CodeInputProps {
-  onValidCode: () => void;
+  onValidCode: (code: string) => Promise<void>;
 }
-
-// Mock database of codes - in a real app this would come from a database
-const mockCodes = {
-  "123456": { name: "João Silva", company: "ABC Corp" },
-  "654321": { name: "Maria Santos", company: "XYZ Ltd" },
-  "111222": { name: "Carlos Oliveira", company: "Tech Solutions" }
-};
 
 const CodeInput: React.FC<CodeInputProps> = ({ onValidCode }) => {
   const { t } = useLanguage();
@@ -28,27 +21,15 @@ const CodeInput: React.FC<CodeInputProps> = ({ onValidCode }) => {
   const [isValidating, setIsValidating] = useState(false);
   const { toast } = useToast();
 
-  const validateCode = () => {
+  const validateCode = async () => {
+    if (!inputCode) return;
     setIsValidating(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const userData = (mockCodes as any)[inputCode];
-      
-      if (userData) {
-        setUserName(userData.name);
-        setCode(inputCode);
-        onValidCode();
-      } else {
-        toast({
-          variant: "destructive",
-          title: t("invalidCode"),
-          description: t("codeError"),
-        });
-      }
-      
+    try {
+      await onValidCode(inputCode);
+    } finally {
       setIsValidating(false);
-    }, 800);
+    }
   };
 
   return (

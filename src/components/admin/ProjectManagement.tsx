@@ -80,25 +80,27 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({
       
       if (error) throw error;
       
-      // Transform project data
-      const newProject: Project = {
-        id: data.id,
-        name: data.name,
-        company_id: data.company_id,
-        company_name: data.companies?.name
-      };
-      
-      onProjectAdded(newProject);
-      
-      toast({
-        title: "Project Added",
-        description: `${name} was added successfully.`
-      });
-      
-      // Reset form
-      setName("");
-      setCompanyId("");
-      setIsOpen(false);
+      if (data) {
+        // Transform project data
+        const newProject: Project = {
+          id: data.id,
+          name: data.name,
+          company_id: data.company_id,
+          company_name: data.companies?.name
+        };
+        
+        onProjectAdded(newProject);
+        
+        toast({
+          title: "Project Added",
+          description: `${name} was added successfully.`
+        });
+        
+        // Reset form
+        setName("");
+        setCompanyId("");
+        setIsOpen(false);
+      }
       
     } catch (error: any) {
       toast({

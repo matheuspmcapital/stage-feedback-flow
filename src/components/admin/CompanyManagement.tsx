@@ -89,17 +89,19 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({
       
       if (error) throw error;
       
-      onCompanyAdded(data as Company);
-      
-      toast({
-        title: "Company Added",
-        description: `${name} was added successfully.`
-      });
-      
-      // Reset form
-      setName("");
-      setCnpj("");
-      setIsOpen(false);
+      if (data) {
+        onCompanyAdded(data as Company);
+        
+        toast({
+          title: "Company Added",
+          description: `${name} was added successfully.`
+        });
+        
+        // Reset form
+        setName("");
+        setCnpj("");
+        setIsOpen(false);
+      }
       
     } catch (error: any) {
       toast({

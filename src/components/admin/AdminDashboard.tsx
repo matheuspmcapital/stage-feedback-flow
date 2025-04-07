@@ -61,6 +61,7 @@ const AdminDashboard: React.FC = () => {
   
   const handleLogout = () => {
     // In a real app, would clear auth state
+    localStorage.removeItem('adminSession');
     window.location.href = "/";
   };
   
@@ -73,7 +74,7 @@ const AdminDashboard: React.FC = () => {
         // Fetch companies
         const { data: companiesData, error: companiesError } = await supabase
           .from('companies')
-          .select('*')
+          .select()
           .order('name');
         
         if (companiesError) throw companiesError;
@@ -91,14 +92,14 @@ const AdminDashboard: React.FC = () => {
         if (projectsError) throw projectsError;
         
         // Transform projects data
-        const transformedProjects = projectsData.map(project => ({
+        const transformedProjects = projectsData?.map(project => ({
           id: project.id,
           name: project.name,
           company_id: project.company_id,
           company_name: project.companies?.name
-        }));
+        })) || [];
         
-        setProjects(transformedProjects || []);
+        setProjects(transformedProjects);
         
         // Fetch survey codes with project info
         const { data: codesData, error: codesError } = await supabase
@@ -115,7 +116,7 @@ const AdminDashboard: React.FC = () => {
         if (codesError) throw codesError;
         
         // Transform codes data
-        const transformedCodes = codesData.map(code => ({
+        const transformedCodes = codesData?.map(code => ({
           id: code.id,
           code: code.code,
           name: code.name,
@@ -127,9 +128,9 @@ const AdminDashboard: React.FC = () => {
           generated_at: code.generated_at,
           started_at: code.started_at,
           completed_at: code.completed_at
-        }));
+        })) || [];
         
-        setCodes(transformedCodes || []);
+        setCodes(transformedCodes);
         
         // For now, we'll just leave the mock responses
         // but in a real app, we would fetch them from survey_answers

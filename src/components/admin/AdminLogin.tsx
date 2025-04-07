@@ -8,7 +8,6 @@ import Logo from "../Logo";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import bcrypt from "bcryptjs";
 
 interface AdminLoginProps {
   onLogin: () => void;
@@ -34,8 +33,8 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
       
       const { data, error } = await supabase
         .from('admin_users')
-        .select('*')
-        .eq('email', email)
+        .select()
+        .eq('email', email.toLowerCase())
         .single();
       
       if (error || !data) {
