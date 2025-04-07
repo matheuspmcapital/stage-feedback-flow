@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend, Cell } from 'recharts';
@@ -18,11 +17,23 @@ interface NPSData {
   label?: string;
 }
 
+const CustomTooltip = (props: any) => {
+  if (!props.active || !props.payload || props.payload.length === 0) {
+    return null;
+  }
+  
+  return (
+    <div className="bg-white p-2 border rounded shadow">
+      <p className="font-medium">{props.payload[0].name}</p>
+      <p className="text-sm">{`${props.payload[0].value}%`}</p>
+    </div>
+  );
+};
+
 const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
   const { getNPSCategory } = useNPS();
   const [filter, setFilter] = useState<string>("all");
 
-  // Get unique service types for filter options
   const serviceTypes = useMemo(() => {
     const types = new Set<string>();
     responses.forEach(response => {
@@ -34,7 +45,6 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
   }, [responses]);
 
   const processResponses = useMemo(() => {
-    // Filter responses based on selected filter
     const filteredResponses = filter === "all" 
       ? responses 
       : responses.filter(r => r.service_type === filter);
@@ -44,7 +54,6 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
     let detractors = 0;
     let total = 0;
 
-    // Process all responses to count NPS categories
     filteredResponses.forEach(response => {
       const recommendScoreAnswer = response.answers?.find(a => a.question_id === 'recommend_score');
       
@@ -62,12 +71,10 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
       }
     });
 
-    // Calculate NPS score
     const npsScore = total > 0 
       ? Math.round((promoters - detractors) / total * 100) 
       : 0;
 
-    // Prepare data for the chart
     const chartData: NPSData[] = [
       { 
         name: 'Promoters (9-10)', 
@@ -99,11 +106,9 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
     };
   }, [responses, getNPSCategory, filter]);
 
-  // Compare function to show side-by-side comparison
   const compareData = useMemo(() => {
     if (serviceTypes.length <= 1) return null;
 
-    // Group data by service type
     const typeData: { [key: string]: { nps: number, responses: number } } = {};
     
     serviceTypes.forEach(type => {
@@ -217,15 +222,7 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
             <YAxis unit="%" />
-            {/* Fixed the tooltip by using the content prop properly */}
-            <Tooltip 
-              content={props => (
-                <ChartTooltipContent 
-                  {...props} 
-                  formatter={(value) => [`${value}%`, 'Percentage']}
-                />
-              )}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <Legend />
             <Bar dataKey="value" name="Percentage">
               {processResponses.chartData.map((entry, index) => (
