@@ -13,51 +13,17 @@ const Admin = () => {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_IN' && session) {
-          // When signed in, verify if user is an admin - use setTimeout to avoid deadlock
-          setTimeout(async () => {
-            try {
-              const { data, error } = await supabase
-                .from('admin_users')
-                .select('*')
-                .eq('email', session.user.email)
-                .maybeSingle();
-                
-              if (error) throw error;
-              
-              if (!data) {
-                // Not an admin user, sign out
-                await supabase.auth.signOut();
-                setIsLoggedIn(false);
-                setSession(null);
-                toast({
-                  variant: "destructive",
-                  title: "Access Denied",
-                  description: "You don't have admin access."
-                });
-              } else {
-                // Is an admin user
-                setIsLoggedIn(true);
-                setSession(session);
-                toast({
-                  title: "Welcome",
-                  description: "You've successfully logged in to the admin panel."
-                });
-              }
-            } catch (err) {
-              console.error("Error verifying admin:", err);
-              toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Failed to verify admin access."
-              });
-            } finally {
-              setIsLoading(false);
-            }
-          }, 0);
+          setIsLoggedIn(true);
+          setSession(session);
+          toast({
+            title: "Welcome",
+            description: "You've successfully logged in to the admin panel."
+          });
+          setIsLoading(false);
         } else if (event === 'SIGNED_OUT') {
           setIsLoggedIn(false);
           setSession(null);
@@ -66,36 +32,14 @@ const Admin = () => {
       }
     );
     
-    // THEN check for existing session
+    // Check for existing session
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          // Verify if this user is an admin
-          const { data, error } = await supabase
-            .from('admin_users')
-            .select('*')
-            .eq('email', session.user.email)
-            .maybeSingle();
-            
-          if (error) throw error;
-          
-          if (!data) {
-            // Not an admin user, sign out
-            await supabase.auth.signOut();
-            setIsLoggedIn(false);
-            setSession(null);
-            toast({
-              variant: "destructive",
-              title: "Access Denied",
-              description: "You don't have admin access."
-            });
-          } else {
-            // Is an admin user
-            setIsLoggedIn(true);
-            setSession(session);
-          }
+          setIsLoggedIn(true);
+          setSession(session);
         }
       } catch (err) {
         console.error("Error checking auth status:", err);

@@ -8,7 +8,6 @@ import Logo from "../Logo";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Navigate } from "react-router-dom";
 
 const AdminLogin: React.FC = () => {
   const { t } = useLanguage();
@@ -33,14 +32,12 @@ const AdminLogin: React.FC = () => {
       });
       
       if (error) {
-        console.error("Authentication error:", error);
         throw new Error(error.message);
       }
       
-      // The Admin.tsx component will handle the admin verification and redirection
       toast({
         title: "Login Successful",
-        description: "Checking admin access...",
+        description: "You've been logged in successfully.",
       });
       
     } catch (error: any) {

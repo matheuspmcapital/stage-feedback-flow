@@ -12,7 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { BarChart, Building, Code, Users, LogOut, FileText } from "lucide-react";
+import { BarChart, Building, Code, Users, LogOut, FileText, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Logo from "../Logo";
 
@@ -21,7 +21,6 @@ interface AdminSidebarProps {
   onSectionChange: (section: string) => void;
   onLogout: () => void;
   userEmail: string;
-  userRole: string;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -29,7 +28,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onSectionChange,
   onLogout,
   userEmail,
-  userRole,
 }) => {
   const menuItems = [
     {
@@ -38,9 +36,24 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: BarChart,
     },
     {
-      title: "Generated Codes",
-      id: "generatedCodes",
+      title: "Survey Responses",
+      id: "responses",
       icon: FileText,
+    },
+    {
+      title: "Generated Codes",
+      id: "codes",
+      icon: Code,
+    },
+    {
+      title: "Generate Code",
+      id: "generate",
+      icon: Plus,
+    },
+    {
+      title: "Companies",
+      id: "companies",
+      icon: Building,
     },
     {
       title: "Projects",
@@ -48,20 +61,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: Code,
     },
     {
-      title: "Companies",
-      id: "companies",
-      icon: Building,
-    },
-  ];
-
-  // Only show Admin Users menu item for full-admins
-  if (userRole === 'full-admin') {
-    menuItems.push({
       title: "Admin Users",
-      id: "adminUsers",
+      id: "admins",
       icon: Users,
-    });
-  }
+    }
+  ];
 
   // Get user initials for avatar
   const getUserInitials = (email: string): string => {
@@ -114,7 +118,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </Avatar>
             <div>
               <p className="text-sm font-medium">{userEmail}</p>
-              <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
             </div>
           </div>
           <SidebarMenuButton onClick={onLogout} variant="outline" className="w-full">

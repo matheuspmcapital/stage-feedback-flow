@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import NPSChart from "./NPSChart";
@@ -65,7 +64,6 @@ export interface AdminUser {
   id: string;
   email: string;
   created_at: string;
-  role?: string;
 }
 
 // Dashboard component
@@ -102,13 +100,11 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
     }
   };
   
-  // Helper function to format dates consistently
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "--";
     return new Date(dateString).toLocaleDateString();
   };
   
-  // Calculate stats
   const calculateStats = (codes: Code[]) => {
     const total = codes.length;
     const started = codes.filter(code => code.started_at).length;
@@ -148,17 +144,14 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
     return `${avgTimeInMinutes} min`;
   };
   
-  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        // Get user's email from session
         const userEmail = session?.user?.email;
         setUserEmail(userEmail || "");
         
-        // Fetch user role
         if (userEmail) {
           const { data: userData, error: userError } = await supabase
             .from('admin_users')
@@ -173,7 +166,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
           }
         }
         
-        // Fetch companies
         const { data: companiesData, error: companiesError } = await supabase
           .from('companies')
           .select('*');
@@ -182,7 +174,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
         
         setCompanies(companiesData || []);
         
-        // Fetch projects with company names
         const { data: projectsData, error: projectsError } = await supabase
           .from('projects')
           .select(`
@@ -192,7 +183,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
         
         if (projectsError) throw projectsError;
         
-        // Transform project data to include company name
         const transformedProjects: Project[] = (projectsData || []).map(project => ({
           id: project.id,
           name: project.name,
@@ -203,7 +193,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
         
         setProjects(transformedProjects);
         
-        // Fetch codes with project names
         const { data: codesData, error: codesError } = await supabase
           .from('survey_codes')
           .select(`
@@ -216,7 +205,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
         
         if (codesError) throw codesError;
         
-        // Transform codes data to include project name
         const transformedCodes: Code[] = (codesData || []).map(code => ({
           id: code.id,
           code: code.code,
@@ -236,14 +224,12 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
         const avgTime = calculateAverageResponseTime(transformedCodes);
         setAverageResponseTime(avgTime);
         
-        // Fetch answers
         const { data: answersData, error: answersError } = await supabase
           .from('survey_answers')
           .select('*');
         
         if (answersError) throw answersError;
         
-        // Process Code Responses
         const processedResponses: CodeResponse[] = transformedCodes
           .filter(code => code.started_at !== null)
           .map(code => {
@@ -272,14 +258,12 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
           
         setCodeResponses(processedResponses);
         
-        // Fetch admin users
         const { data: adminUsersData, error: adminUsersError } = await supabase
           .from('admin_users')
           .select('*');
         
         if (adminUsersError) throw adminUsersError;
         
-        // Transform admin users data with roles
         const transformedAdminUsers: AdminUser[] = (adminUsersData || []).map(user => ({
           id: user.id,
           email: user.email,
