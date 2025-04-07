@@ -81,6 +81,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
   const [averageResponseTime, setAverageResponseTime] = useState<string>("--");
   const [userRole, setUserRole] = useState<string>("partner");
   const [userEmail, setUserEmail] = useState<string>("");
+  const { toast } = useToast();
 
   const handleLogout = async () => {
     try {
