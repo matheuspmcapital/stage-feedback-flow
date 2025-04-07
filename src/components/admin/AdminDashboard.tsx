@@ -12,9 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import AdminSidebar from "./AdminSidebar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Clock, TrendingUp, Users, Code as CodeIcon } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Interfaces for our data types
 export interface Company {
@@ -58,6 +57,7 @@ export interface Response {
 export interface AdminUser {
   id: string;
   email: string;
+  role: string;
   created_at: string;
 }
 
@@ -70,11 +70,28 @@ const AdminDashboard: React.FC = () => {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [averageResponseTime, setAverageResponseTime] = useState<string>("--");
+  const [userRole, setUserRole] = useState<string>("partner");
   const { toast } = useToast();
   
   const handleLogout = () => {
     localStorage.removeItem('adminSession');
     window.location.href = "/";
+  };
+  
+  // Format date to dd/mm/yy HH:MM:SS
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "--";
+    
+    const date = new Date(dateString);
+    
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString().slice(2);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    
+    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
   };
   
   // Calculate average response time
@@ -102,6 +119,23 @@ const AdminDashboard: React.FC = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        
+        // Get current user's email
+        const { data: { session } } = await supabase.auth.getSession();
+        const userEmail = session?.user?.email;
+        
+        // Fetch user role
+        if (userEmail) {
+          const { data: userData, error: userError } = await supabase
+            .from('admin_users')
+            .select('role')
+            .eq('email', userEmail.toLowerCase())
+            .single();
+          
+          if (!userError && userData) {
+            setUserRole(userData.role);
+          }
+        }
         
         // Fetch companies
         const { data: companiesData, error: companiesError } = await supabase
@@ -170,11 +204,62 @@ const AdminDashboard: React.FC = () => {
         // Fetch admin users
         const { data: adminUsersData, error: adminUsersError } = await supabase
           .from('admin_users')
-          .select('id, email, created_at')
+          .select('id, email, role, created_at')
           .order('email');
         
         if (adminUsersError) throw adminUsersError;
         setAdminUsers(adminUsersData || []);
+        
+        // Fetch survey answers for NPS chart data
+        const { data: answersData, error: answersError } = await supabase
+          .from('survey_answers')
+          .select(`
+            answer,
+            question_id,
+            survey_code:survey_code_id (
+              name,
+              code,
+              service_type
+            )
+          `);
+        
+        if (answersError) throw answersError;
+        
+        // Process survey answers into responses format for charts
+        if (answersData) {
+          const processedResponses: { [key: string]: any } = {};
+          
+          answersData.forEach(answer => {
+            const code = answer.survey_code?.code || '';
+            if (!processedResponses[code]) {
+              processedResponses[code] = {
+                userName: answer.survey_code?.name || '',
+                code,
+                serviceType: answer.survey_code?.service_type || '',
+              };
+            }
+            
+            if (answer.question_id === 'recommend_score') {
+              processedResponses[code].recommendScore = parseInt(answer.answer);
+            } else if (answer.question_id === 'recommend_reason') {
+              processedResponses[code].recommendReason = answer.answer;
+            } else if (answer.question_id === 'rehire_score') {
+              processedResponses[code].rehireScore = parseInt(answer.answer);
+            } else if (answer.question_id === 'testimonial') {
+              processedResponses[code].testimonial = answer.answer;
+            } else if (answer.question_id === 'can_publish') {
+              processedResponses[code].canPublish = answer.answer === 'true';
+            }
+          });
+          
+          // Convert to array and add submittedAt
+          const responseArray = Object.values(processedResponses).map(item => ({
+            ...item,
+            submittedAt: new Date().toISOString(),
+          }));
+          
+          setResponses(responseArray as Response[]);
+        }
         
       } catch (error: any) {
         toast({
@@ -207,13 +292,6 @@ const AdminDashboard: React.FC = () => {
     setAdminUsers([...adminUsers, adminUser]);
   };
   
-  // Chart data from responses
-  const chartData = responses.map(response => ({
-    name: response.userName,
-    recommendScore: response.recommendScore,
-    rehireScore: response.rehireScore
-  }));
-
   // Calculate some quick metrics for the dashboard
   const completedSurveys = codes.filter(c => c.completed_at).length;
   const pendingSurveys = codes.filter(c => !c.started_at).length;
@@ -222,93 +300,14 @@ const AdminDashboard: React.FC = () => {
     ? Math.round((completedSurveys / codes.length) * 100) 
     : 0;
 
-  // Render dashboard section with summary cards and charts
-  const renderDashboard = () => (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Surveys</CardTitle>
-            <CodeIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{codes.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {codes.length} total generated surveys
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completionRate}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {completedSurveys} completed, {pendingSurveys} pending, {progressSurveys} in progress
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Companies & Projects</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{companies.length} / {projects.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Companies / Projects in system
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Response Time</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{averageResponseTime}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              From {codes.filter(c => c.completed_at).length} completed surveys
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+  // Count by service type
+  const strategySurveys = codes.filter(c => c.service_type === 'strategy').length;
+  const experienceSurveys = codes.filter(c => c.service_type === 'experience').length;
 
-      <div className="mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>NPS Dashboard</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <NPSChart data={chartData} />
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Survey Codes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CodesList codes={codes.slice(0, 5)} />
-          <div className="mt-4 flex justify-center">
-            <button 
-              className="text-sm text-blue-500" 
-              onClick={() => setActiveSection("generatedCodes")}
-            >
-              View all {codes.length} codes
-            </button>
-          </div>
-        </CardContent>
-      </Card>
-    </>
-  );
-
+  // Prepare chart data by service type
+  const strategyResponses = responses.filter(r => r.serviceType === 'strategy');
+  const experienceResponses = responses.filter(r => r.serviceType === 'experience');
+    
   // Content to display based on active section
   const renderContent = () => {
     if (isLoading) {
@@ -321,12 +320,98 @@ const AdminDashboard: React.FC = () => {
 
     switch (activeSection) {
       case "dashboard":
-        return renderDashboard();
-      case "companies":
         return (
-          <CompanyManagement 
-            companies={companies} 
-            onCompanyAdded={handleCompanyAdded}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-row items-center justify-between pb-2">
+                    <p className="text-sm font-medium">Total Surveys</p>
+                    <CodeIcon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="text-2xl font-bold">{codes.length}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Strategy: {strategySurveys}, Experience: {experienceSurveys}
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-row items-center justify-between pb-2">
+                    <p className="text-sm font-medium">Completion Rate</p>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="text-2xl font-bold">{completionRate}%</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {completedSurveys} completed, {pendingSurveys} pending, {progressSurveys} in progress
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-row items-center justify-between pb-2">
+                    <p className="text-sm font-medium">Companies & Projects</p>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="text-2xl font-bold">{companies.length} / {projects.length}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Companies / Projects in system
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-row items-center justify-between pb-2">
+                    <p className="text-sm font-medium">Avg. Response Time</p>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="text-2xl font-bold">{averageResponseTime}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    From {codes.filter(c => c.completed_at).length} completed surveys
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="mb-8">
+              <Card>
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-semibold mb-4">NPS Dashboard</h3>
+                  <NPSChart 
+                    data={responses}
+                    strategyData={strategyResponses}
+                    experienceData={experienceResponses}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-semibold mb-4">Recent Survey Codes</h3>
+                <CodesList codes={codes.slice(0, 5)} formatDate={formatDate} />
+                <div className="mt-4 flex justify-center">
+                  <button 
+                    className="text-sm text-blue-500" 
+                    onClick={() => setActiveSection("generatedCodes")}
+                  >
+                    View all {codes.length} codes
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        );
+      case "generatedCodes":
+        return (
+          <GeneratedCodes 
+            codes={codes}
+            onCodeGenerated={handleCodeGenerated}
+            projects={projects}
+            formatDate={formatDate}
           />
         );
       case "projects":
@@ -337,19 +422,19 @@ const AdminDashboard: React.FC = () => {
             onProjectAdded={handleProjectAdded}
           />
         );
+      case "companies":
+        return (
+          <CompanyManagement 
+            companies={companies} 
+            onCompanyAdded={handleCompanyAdded}
+          />
+        );
       case "adminUsers":
         return (
           <AdminUserManagement 
             adminUsers={adminUsers}
             onAdminUserAdded={handleAdminUserAdded}
-          />
-        );
-      case "generatedCodes":
-        return (
-          <GeneratedCodes 
-            codes={codes}
-            onCodeGenerated={handleCodeGenerated}
-            projects={projects}
+            userRole={userRole}
           />
         );
       case "responses":
@@ -366,23 +451,22 @@ const AdminDashboard: React.FC = () => {
           activeSection={activeSection}
           onSectionChange={setActiveSection}
           onLogout={handleLogout}
+          userEmail={adminUsers.find(u => u.role === userRole)?.email || ''}
+          userRole={userRole}
         />
 
-        <SidebarInset>
-          <ScrollArea className="w-full">
-            <div className="container mx-auto p-6">
-              <h1 className="text-2xl font-bold mb-6">
-                {activeSection === "dashboard" && "Dashboard"}
-                {activeSection === "companies" && "Companies"}
-                {activeSection === "projects" && "Projects"}
-                {activeSection === "adminUsers" && "Admin Users"}
-                {activeSection === "generatedCodes" && "Generated Codes"}
-                {activeSection === "responses" && "Survey Responses"}
-              </h1>
-              
-              {renderContent()}
-            </div>
-          </ScrollArea>
+        <SidebarInset className="h-screen overflow-auto">
+          <div className="container mx-auto p-6">
+            <h1 className="text-2xl font-bold mb-6">
+              {activeSection === "dashboard" && "Dashboard"}
+              {activeSection === "generatedCodes" && "Generated Codes"}
+              {activeSection === "projects" && "Projects"}
+              {activeSection === "companies" && "Companies"}
+              {activeSection === "adminUsers" && "Admin Users"}
+            </h1>
+            
+            {renderContent()}
+          </div>
         </SidebarInset>
       </div>
     </SidebarProvider>

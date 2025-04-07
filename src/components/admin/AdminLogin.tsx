@@ -8,13 +8,8 @@ import Logo from "../Logo";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import bcrypt from "bcryptjs";
 
-interface AdminLoginProps {
-  onLogin: () => void;
-}
-
-const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
+const AdminLogin: React.FC = () => {
   const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,38 +25,36 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         throw new Error("Please enter both email and password.");
       }
       
-      // Check for hardcoded credentials first
-      if (email.toLowerCase() === 'matheus.pinheiro@stage.consulting' && password === '62aMVzL&qr$&n2') {
-        onLogin();
-        toast({
-          title: "Login Successful",
-          description: "Welcome to the admin dashboard.",
-        });
-        return;
-      }
-      
-      // If not hardcoded credentials, check database
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('password')
-        .eq('email', email.toLowerCase())
-        .single();
+      // Sign in with Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase(),
+        password: password
+      });
       
       if (error) {
-        throw new Error("Invalid login credentials.");
+        throw new Error(error.message || "Invalid login credentials.");
       }
       
-      // Compare password with hashed password in database
-      const passwordMatch = await bcrypt.compare(password, data.password);
-      
-      if (passwordMatch) {
-        onLogin();
+      if (data.session) {
+        // Check if user is in admin_users table
+        const { data: adminData, error: adminError } = await supabase
+          .from('admin_users')
+          .select('id, role')
+          .eq('email', email.toLowerCase())
+          .single();
+        
+        if (adminError || !adminData) {
+          // If not in admin_users table, sign out
+          await supabase.auth.signOut();
+          throw new Error("You don't have admin access.");
+        }
+        
         toast({
           title: "Login Successful",
           description: "Welcome to the admin dashboard.",
         });
       } else {
-        throw new Error("Invalid login credentials.");
+        throw new Error("Login failed. Please try again.");
       }
     } catch (error: any) {
       toast({
@@ -69,7 +62,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         title: "Login Failed",
         description: error.message || "An error occurred while logging in.",
       });
-    } finally {
       setIsLoggingIn(false);
     }
   };

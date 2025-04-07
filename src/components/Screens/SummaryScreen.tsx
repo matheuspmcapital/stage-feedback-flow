@@ -1,11 +1,10 @@
 
 import React from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { useNPS } from "../../contexts/NPSContext";
-import { Button } from "@/components/ui/button";
-import Logo from "../Logo";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNPS } from "../../contexts/NPSContext";
+import ProgressBar from "../ProgressBar";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SummaryScreenProps {
@@ -15,6 +14,7 @@ interface SummaryScreenProps {
 }
 
 const SummaryScreen: React.FC<SummaryScreenProps> = ({
+  onNext,
   onPrev,
   onSubmit,
 }) => {
@@ -23,88 +23,67 @@ const SummaryScreen: React.FC<SummaryScreenProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="question-container relative flex flex-col h-full"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.5 }}
+      className="container mx-auto max-w-2xl px-4 py-8 flex flex-col h-[calc(100vh-120px)]"
     >
-      <Logo />
-      <motion.h1
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 text-center"
-      >
-        {t("yourAnswers")}
-      </motion.h1>
-      
-      <ScrollArea className="flex-grow mb-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="w-full max-w-xl space-y-4"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{t("question1")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="font-bold text-xl text-primary">{npsData.recommendScore}</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{t("question2")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>{npsData.recommendReason}</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{t("question3")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="font-bold text-xl text-primary">{npsData.rehireScore}</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{t("question4")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>{npsData.testimonial}</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{t("question5")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>{npsData.canPublish ? t("yes") : t("no")}</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-center mb-2">{t("summary")}</h1>
+        <p className="text-lg text-center text-muted-foreground">
+          {t("summarySubtitle")}
+        </p>
+      </div>
+
+      <ScrollArea className="flex-grow mb-6 rounded-lg border">
+        <div className="bg-card rounded-lg p-6">
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-medium">{t("recommendationScore")}</h3>
+              <div className="text-2xl mt-1">{npsData.recommendScore}</div>
+            </div>
+
+            <div>
+              <h3 className="font-medium">{t("recommendationReason")}</h3>
+              <div className="p-3 bg-muted rounded-md mt-1">
+                {npsData.recommendReason || t("notProvided")}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-medium">{t("rehireScore")}</h3>
+              <div className="text-2xl mt-1">{npsData.rehireScore}</div>
+            </div>
+
+            <div>
+              <h3 className="font-medium">{t("testimonial")}</h3>
+              <div className="p-3 bg-muted rounded-md mt-1">
+                {npsData.testimonial || t("notProvided")}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-medium">{t("publishConsent")}</h3>
+              <div className="mt-1">
+                {npsData.canPublish ? t("yes") : t("no")}
+              </div>
+            </div>
+          </div>
+        </div>
       </ScrollArea>
-      
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="flex gap-4 py-4 bg-white absolute bottom-0 w-full justify-center border-t"
-      >
-        <Button variant="outline" onClick={onPrev} className="px-8">
-          {t("back")}
-        </Button>
-        <Button onClick={onSubmit} className="px-8">
-          {t("sendAnswers")}
-        </Button>
-      </motion.div>
+
+      <div className="sticky bottom-0 bg-background pt-4">
+        <ProgressBar currentStep={7} totalSteps={7} />
+        <div className="flex justify-between mt-4">
+          <Button onClick={onPrev} variant="outline" size="lg">
+            {t("back")}
+          </Button>
+          <Button onClick={onSubmit} size="lg">
+            {t("submit")}
+          </Button>
+        </div>
+      </div>
     </motion.div>
   );
 };

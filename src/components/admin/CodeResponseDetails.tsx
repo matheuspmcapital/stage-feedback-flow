@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Code } from "./AdminDashboard";
 import { Separator } from "@/components/ui/separator";
@@ -28,6 +27,22 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
   const [responses, setResponses] = useState<FormattedResponse>({});
   const [isLoading, setIsLoading] = useState(true);
   const [timeSpent, setTimeSpent] = useState<string>('-');
+
+  // Format date to dd/mm/yy HH:MM:SS
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "--";
+    
+    const date = new Date(dateString);
+    
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString().slice(2);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    
+    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+  };
 
   useEffect(() => {
     const fetchResponses = async () => {
@@ -88,16 +103,10 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
     fetchResponses();
   }, [code]);
 
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
-
   return (
-    <ScrollArea className="h-[calc(100vh-120px)]">
+    <ScrollArea className="h-[calc(100vh-180px)]">
       <div className="space-y-4 py-4">
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
             <p className="text-sm font-medium">Name</p>
             <p>{code.name}</p>
@@ -138,7 +147,7 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
 
         <Separator />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <p className="text-sm font-medium">Generated</p>
             <p>{formatDate(code.generated_at)}</p>
@@ -162,7 +171,7 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
         ) : Object.keys(responses).length > 0 ? (
           <>
             <Separator />
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto">
               <h3 className="text-lg font-semibold">Survey Responses</h3>
               
               <div className="space-y-3">

@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -21,6 +21,14 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminUser } from "./AdminDashboard";
@@ -30,18 +38,37 @@ import bcrypt from "bcryptjs";
 interface AdminUserManagementProps {
   adminUsers: AdminUser[];
   onAdminUserAdded: (adminUser: AdminUser) => void;
+  userRole: string;
 }
 
 const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ 
   adminUsers, 
-  onAdminUserAdded 
+  onAdminUserAdded,
+  userRole
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState("partner");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
+
+  // Format date to dd/mm/yy HH:MM:SS
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "--";
+    
+    const date = new Date(dateString);
+    
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString().slice(2);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    
+    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,10 +100,32 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
       return;
     }
     
+    if (userRole !== 'full-admin') {
+      toast({
+        variant: "destructive",
+        title: "Permission Denied",
+        description: "Only full admins can add new users."
+      });
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       
-      // Hash the password before storing
+      // First create user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email.toLowerCase(),
+        password: password,
+        options: {
+          data: {
+            role: role
+          }
+        }
+      });
+      
+      if (authError) throw authError;
+      
+      // Hash the password before storing in admin_users table
       const hashedPassword = await bcrypt.hash(password, 10);
       
       // Check if the email already exists
@@ -88,12 +137,7 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
       if (checkError) throw checkError;
       
       if (existingUsers && existingUsers.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "Email Already Exists",
-          description: "An admin user with this email already exists."
-        });
-        return;
+        throw new Error("An admin user with this email already exists.");
       }
       
       // Insert admin user into Supabase
@@ -101,7 +145,8 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
         .from('admin_users')
         .insert({ 
           email: email.toLowerCase(),
-          password: hashedPassword
+          password: hashedPassword,
+          role: role
         })
         .select()
         .single();
@@ -113,13 +158,14 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
         
         toast({
           title: "Admin User Added",
-          description: `${email} was added successfully.`
+          description: `${email} was added as a ${role}.`
         });
         
         // Reset form
         setEmail("");
         setPassword("");
         setConfirmPassword("");
+        setRole("partner");
         setIsOpen(false);
       }
       
@@ -134,10 +180,20 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
     }
   };
 
+  // Only full admins can see this page
+  if (userRole !== 'full-admin') {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p className="text-lg text-muted-foreground">
+          You don't have permission to access this page.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Admin Users</CardTitle>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button size="sm">
@@ -180,6 +236,23 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
                   placeholder="Confirm password"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select value={role} onValueChange={setRole}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="partner">Partner</SelectItem>
+                      <SelectItem value="full-admin">Full Admin</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Full admins can add/edit users. Partners can only view other sections.
+                </p>
+              </div>
               <DialogFooter>
                 <DialogClose asChild>
                   <Button type="button" variant="outline">Cancel</Button>
@@ -198,6 +271,7 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
             <TableHeader>
               <TableRow>
                 <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead>Created At</TableHead>
               </TableRow>
             </TableHeader>
@@ -210,12 +284,13 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
                       {adminUser.email}
                     </div>
                   </TableCell>
-                  <TableCell>{new Date(adminUser.created_at).toLocaleString()}</TableCell>
+                  <TableCell className="capitalize">{adminUser.role || 'partner'}</TableCell>
+                  <TableCell>{formatDate(adminUser.created_at)}</TableCell>
                 </TableRow>
               ))}
               {adminUsers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                     No admin users added yet
                   </TableCell>
                 </TableRow>
