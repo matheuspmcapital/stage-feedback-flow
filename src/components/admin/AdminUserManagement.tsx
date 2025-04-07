@@ -12,11 +12,13 @@ import { AdminUser } from "./AdminDashboard";
 interface AdminUserManagementProps {
   adminUsers: AdminUser[];
   onAdminUserAdded: (user: AdminUser) => void;
+  userRole: string; // Added userRole prop to interface
 }
 
 const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ 
   adminUsers, 
-  onAdminUserAdded 
+  onAdminUserAdded,
+  userRole // Added to props destructuring
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

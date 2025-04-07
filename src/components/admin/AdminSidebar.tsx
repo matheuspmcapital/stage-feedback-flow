@@ -21,6 +21,7 @@ interface AdminSidebarProps {
   onSectionChange: (section: string) => void;
   onLogout: () => void;
   userEmail: string;
+  userRole: string; // Added userRole prop to interface
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -28,6 +29,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onSectionChange,
   onLogout,
   userEmail,
+  userRole, // Added to props destructuring
 }) => {
   const menuItems = [
     {
