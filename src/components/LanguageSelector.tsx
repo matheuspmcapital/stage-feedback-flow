@@ -2,7 +2,7 @@
 import React from "react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, Flag } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,13 +12,15 @@ import {
 import { motion } from "framer-motion";
 
 const languageOptions = [
-  { value: "pt", label: "Português" },
-  { value: "en", label: "English" },
-  { value: "es", label: "Español" },
+  { value: "pt", label: "Português", Icon: () => <Flag className="mr-2 h-4 w-4" color="#009C3B" /> }, // Brazil flag colors
+  { value: "en", label: "English", Icon: () => <Flag className="mr-2 h-4 w-4" color="#B31942" /> }, // US flag colors
+  { value: "es", label: "Español", Icon: () => <Flag className="mr-2 h-4 w-4" color="#AA151B" /> }, // Spain flag colors
 ];
 
 const LanguageSelector: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
+
+  const selectedLanguage = languageOptions.find((option) => option.value === language);
 
   return (
     <motion.div
@@ -29,8 +31,9 @@ const LanguageSelector: React.FC = () => {
     >
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
-            {languageOptions.find((option) => option.value === language)?.label}
+          <Button variant="outline" size="sm" className="flex items-center">
+            {selectedLanguage?.Icon && <selectedLanguage.Icon />}
+            {selectedLanguage?.label}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -40,7 +43,10 @@ const LanguageSelector: React.FC = () => {
               onClick={() => setLanguage(option.value as "pt" | "en" | "es")}
               className="flex items-center justify-between"
             >
-              {option.label}
+              <div className="flex items-center">
+                <option.Icon />
+                {option.label}
+              </div>
               {language === option.value && (
                 <Check className="w-4 h-4 ml-2 text-primary" />
               )}
@@ -53,3 +59,4 @@ const LanguageSelector: React.FC = () => {
 };
 
 export default LanguageSelector;
+
