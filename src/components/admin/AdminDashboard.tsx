@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import Logo from "../Logo";
 import CompanyManagement from "./CompanyManagement";
 import ProjectManagement from "./ProjectManagement";
+import AdminUserManagement from "./AdminUserManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -51,11 +52,18 @@ export interface Response {
   submittedAt: string;
 }
 
+export interface AdminUser {
+  id: string;
+  email: string;
+  created_at: string;
+}
+
 const AdminDashboard: React.FC = () => {
   const [codes, setCodes] = useState<Code[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
@@ -132,6 +140,15 @@ const AdminDashboard: React.FC = () => {
         
         setCodes(transformedCodes);
         
+        // Fetch admin users
+        const { data: adminUsersData, error: adminUsersError } = await supabase
+          .from('admin_users')
+          .select('id, email, created_at')
+          .order('email');
+        
+        if (adminUsersError) throw adminUsersError;
+        setAdminUsers(adminUsersData || []);
+        
         // For now, we'll just leave the mock responses
         // but in a real app, we would fetch them from survey_answers
         
@@ -160,6 +177,10 @@ const AdminDashboard: React.FC = () => {
   
   const handleProjectAdded = (project: Project) => {
     setProjects([...projects, project]);
+  };
+  
+  const handleAdminUserAdded = (adminUser: AdminUser) => {
+    setAdminUsers([...adminUsers, adminUser]);
   };
   
   // Chart data from responses
@@ -204,6 +225,7 @@ const AdminDashboard: React.FC = () => {
                 <TabsTrigger value="responses">Survey Responses</TabsTrigger>
                 <TabsTrigger value="companies">Companies</TabsTrigger>
                 <TabsTrigger value="projects">Projects</TabsTrigger>
+                <TabsTrigger value="adminUsers">Admin Users</TabsTrigger>
               </TabsList>
               
               <TabsContent value="codes">
@@ -226,6 +248,13 @@ const AdminDashboard: React.FC = () => {
                   projects={projects} 
                   companies={companies}
                   onProjectAdded={handleProjectAdded}
+                />
+              </TabsContent>
+              
+              <TabsContent value="adminUsers">
+                <AdminUserManagement 
+                  adminUsers={adminUsers}
+                  onAdminUserAdded={handleAdminUserAdded}
                 />
               </TabsContent>
             </Tabs>
