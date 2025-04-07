@@ -38,6 +38,16 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
+  // Function to generate a random 8-character alphanumeric code (case sensitive)
+  const generateRandomCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -53,11 +63,32 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
     try {
       setIsSubmitting(true);
       
+      // Generate custom code instead of using DB function
+      const randomCode = generateRandomCode();
+      
+      // Check if the code already exists
+      const { data: existingCodes, error: checkError } = await supabase
+        .from('survey_codes')
+        .select('code')
+        .eq('code', randomCode);
+      
+      if (checkError) throw checkError;
+      
+      if (existingCodes && existingCodes.length > 0) {
+        // If code exists, try again
+        toast({
+          variant: "destructive",
+          title: "Code Generation Error",
+          description: "Generated code already exists. Please try again."
+        });
+        return;
+      }
+      
       // Insert new code into Supabase
       const { data, error } = await supabase
         .from('survey_codes')
         .insert({
-          code: Math.floor(100000 + Math.random() * 900000).toString(), // Will use DB function in production
+          code: randomCode,
           name,
           email,
           project_id: projectId,

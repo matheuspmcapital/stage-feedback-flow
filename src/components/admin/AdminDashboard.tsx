@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import AdminSidebar from "./AdminSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Clock } from "lucide-react";
 
 // Interfaces for our data types
 export interface Company {
@@ -67,11 +68,32 @@ const AdminDashboard: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [averageResponseTime, setAverageResponseTime] = useState<string>("--");
   const { toast } = useToast();
   
   const handleLogout = () => {
     localStorage.removeItem('adminSession');
     window.location.href = "/";
+  };
+  
+  // Calculate average response time
+  const calculateAverageResponseTime = (codes: Code[]) => {
+    const completedCodes = codes.filter(code => code.started_at && code.completed_at);
+    
+    if (completedCodes.length === 0) {
+      return "--";
+    }
+    
+    const totalTimeInMs = completedCodes.reduce((total, code) => {
+      const startTime = new Date(code.started_at!).getTime();
+      const endTime = new Date(code.completed_at!).getTime();
+      return total + (endTime - startTime);
+    }, 0);
+    
+    const avgTimeMs = totalTimeInMs / completedCodes.length;
+    const avgTimeMin = Math.floor(avgTimeMs / (1000 * 60));
+    
+    return avgTimeMin === 1 ? "1 minute" : `${avgTimeMin} minutes`;
   };
   
   // Load all data from Supabase
@@ -141,6 +163,9 @@ const AdminDashboard: React.FC = () => {
         
         setCodes(transformedCodes);
         
+        // Calculate average response time
+        setAverageResponseTime(calculateAverageResponseTime(transformedCodes));
+        
         // Fetch admin users
         const { data: adminUsersData, error: adminUsersError } = await supabase
           .from('admin_users')
@@ -199,7 +224,7 @@ const AdminDashboard: React.FC = () => {
         <NPSChart data={chartData} />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardHeader>
             <CardTitle>Recent Codes</CardTitle>
@@ -237,6 +262,19 @@ const AdminDashboard: React.FC = () => {
                 Manage Projects
               </button>
             </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Average Response Time</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{averageResponseTime}</p>
+            <p className="text-sm text-muted-foreground">
+              From {codes.filter(c => c.completed_at).length} completed surveys
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -305,7 +343,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-muted/20">
+      <div className="flex w-full bg-muted/20">
         <AdminSidebar 
           activeSection={activeSection}
           onSectionChange={setActiveSection}

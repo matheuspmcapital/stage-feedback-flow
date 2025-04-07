@@ -23,6 +23,8 @@ import {
   PaginationPrevious 
 } from "@/components/ui/pagination";
 import CodeGenerator from "./CodeGenerator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import CodeResponseDetails from "./CodeResponseDetails";
 
 interface GeneratedCodesProps {
   codes: Code[];
@@ -37,6 +39,8 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
 }) => {
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCode, setSelectedCode] = useState<Code | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const itemsPerPage = 10;
   
   const formatDate = (dateString: string | undefined) => {
@@ -45,16 +49,32 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
   };
   
   const handleViewCode = (code: Code) => {
-    toast({
-      title: "View Code Details",
-      description: `Viewing details for code: ${code.code}`
-    });
+    setSelectedCode(code);
+    setDetailsOpen(true);
   };
 
   // Calculate pagination
   const totalPages = Math.ceil(codes.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const displayedCodes = codes.slice(startIndex, startIndex + itemsPerPage);
+
+  // Calculate time spent for each code
+  const getTimeSpent = (code: Code) => {
+    if (code.started_at && code.completed_at) {
+      const start = new Date(code.started_at).getTime();
+      const end = new Date(code.completed_at).getTime();
+      const diffInMinutes = Math.round((end - start) / (1000 * 60));
+      
+      if (diffInMinutes < 1) {
+        return "< 1 minute";
+      } else if (diffInMinutes === 1) {
+        return "1 minute";
+      } else {
+        return `${diffInMinutes} minutes`;
+      }
+    }
+    return "-";
+  };
 
   return (
     <div className="space-y-6">
@@ -78,6 +98,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                   <TableHead>Project</TableHead>
                   <TableHead>Service Type</TableHead>
                   <TableHead>Generated</TableHead>
+                  <TableHead>Time Spent</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -95,11 +116,12 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDate(code.generated_at)}</TableCell>
+                    <TableCell>{getTimeSpent(code)}</TableCell>
                     <TableCell>
                       {code.completed_at ? (
-                        <Badge variant="success" className="bg-green-500">Completed</Badge>
+                        <Badge className="bg-green-500">Completed</Badge>
                       ) : code.started_at ? (
-                        <Badge variant="warning" className="bg-orange-400">Started</Badge>
+                        <Badge className="bg-orange-400">Started</Badge>
                       ) : (
                         <Badge variant="outline">Pending</Badge>
                       )}
@@ -118,7 +140,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                 ))}
                 {displayedCodes.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No codes generated yet
                     </TableCell>
                   </TableRow>
@@ -159,6 +181,18 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* Response Details Dialog */}
+      {selectedCode && (
+        <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+          <DialogContent className="sm:max-w-[720px]">
+            <DialogHeader>
+              <DialogTitle>Response Details for Code: {selectedCode.code}</DialogTitle>
+            </DialogHeader>
+            <CodeResponseDetails code={selectedCode} />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
