@@ -158,7 +158,7 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
         const newAdminUser: AdminUser = {
           id: data.id,
           email: data.email,
-          role: data.role || role,
+          role: data.role || role, // Make sure we have a fallback
           created_at: data.created_at
         };
         

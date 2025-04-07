@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import NPSChart from "./NPSChart";
@@ -72,6 +71,7 @@ const AdminDashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [averageResponseTime, setAverageResponseTime] = useState<string>("--");
   const [userRole, setUserRole] = useState<string>("partner");
+  const [userEmail, setUserEmail] = useState<string>("");
   const { toast } = useToast();
   
   const handleLogout = async () => {
@@ -128,6 +128,7 @@ const AdminDashboard: React.FC = () => {
         // Get current user's email
         const { data: { session } } = await supabase.auth.getSession();
         const userEmail = session?.user?.email;
+        setUserEmail(userEmail || "");
         
         // Fetch user role
         if (userEmail) {
@@ -214,7 +215,7 @@ const AdminDashboard: React.FC = () => {
         
         if (adminUsersError) throw adminUsersError;
         
-        // Transform admin users data with roles
+        // Transform admin users data with roles - make sure we handle cases where role might not exist
         const transformedAdminUsers: AdminUser[] = (adminUsersData || []).map(user => ({
           id: user.id,
           email: user.email,
@@ -474,7 +475,7 @@ const AdminDashboard: React.FC = () => {
           activeSection={activeSection}
           onSectionChange={setActiveSection}
           onLogout={handleLogout}
-          userEmail={session?.user?.email || adminUsers.find(u => u.role === userRole)?.email || ''}
+          userEmail={userEmail}
           userRole={userRole}
         />
 
