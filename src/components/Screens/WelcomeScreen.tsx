@@ -33,13 +33,13 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
         className="text-center max-w-xl mx-auto"
       >
         <h1 className="text-2xl sm:text-3xl font-bold mb-4">
-          {t("welcomeHeader")}
+          {t("welcome")}
         </h1>
         <p className="text-lg text-muted-foreground mb-6">
-          {t("welcomeText")}
+          {t("subtitle")}
         </p>
         <Button onClick={onNext} size="lg" className="px-8 py-6 text-lg">
-          {t("startSurvey")}
+          {t("start")}
         </Button>
       </motion.div>
     </motion.div>

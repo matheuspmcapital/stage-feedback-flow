@@ -299,44 +299,44 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
             <h1 className="text-3xl font-bold">Dashboard</h1>
             
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/30 border-blue-200 dark:border-blue-700/50">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-blue-800 dark:text-blue-300">{stats.total}</CardTitle>
+                  <CardTitle>{stats.total}</CardTitle>
                   <CardDescription>Total Codes Generated</CardDescription>
                 </CardHeader>
               </Card>
               
-              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/30 border-green-200 dark:border-green-700/50">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-green-800 dark:text-green-300">{stats.responses}</CardTitle>
+                  <CardTitle>{stats.responses}</CardTitle>
                   <CardDescription>Survey Responses</CardDescription>
                 </CardHeader>
               </Card>
               
-              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/30 border-purple-200 dark:border-purple-700/50">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-purple-800 dark:text-purple-300">{stats.participation}%</CardTitle>
+                  <CardTitle>{stats.participation}%</CardTitle>
                   <CardDescription>Participation Rate</CardDescription>
                 </CardHeader>
               </Card>
               
-              <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/30 border-amber-200 dark:border-amber-700/50">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-amber-800 dark:text-amber-300">{stats.completed}</CardTitle>
+                  <CardTitle>{stats.completed}</CardTitle>
                   <CardDescription>Completed Surveys</CardDescription>
                 </CardHeader>
               </Card>
               
-              <Card className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/30 border-pink-200 dark:border-pink-700/50">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-pink-800 dark:text-pink-300">{stats.pending}</CardTitle>
+                  <CardTitle>{stats.pending}</CardTitle>
                   <CardDescription>Pending Responses</CardDescription>
                 </CardHeader>
               </Card>
               
-              <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/30 border-indigo-200 dark:border-indigo-700/50">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-indigo-800 dark:text-indigo-300">{averageResponseTime}</CardTitle>
+                  <CardTitle>{averageResponseTime}</CardTitle>
                   <CardDescription>Average Response Time</CardDescription>
                 </CardHeader>
               </Card>
@@ -344,9 +344,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
             
             <div className="grid grid-cols-1 gap-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>NPS Analysis</CardTitle>
-                </CardHeader>
                 <div className="p-6">
                   <NPSChart responses={codeResponses} />
                 </div>

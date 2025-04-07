@@ -7,9 +7,9 @@ type Translations = {
 
 export const translations: Translations = {
   welcome: {
-    pt: "sua opinião é muito importante para nós",
-    en: "your opinion is very important to us",
-    es: "su opinión es muy importante para nosotros"
+    pt: "Sua opinião é muito importante para nós",
+    en: "Your opinion is very important to us",
+    es: "Su opinión es muy importante para nosotros"
   },
   subtitle: {
     pt: "Participe da nossa pesquisa de satisfação. São só 5 perguntas.",
@@ -27,14 +27,14 @@ export const translations: Translations = {
     es: "¿Cuál es la probabilidad de que recomiende Stage Consulting a un amigo, colega u otra empresa?"
   },
   lowProbability: {
-    pt: "Pouco provável",
-    en: "Not likely",
-    es: "Poco probable"
+    pt: "1 - Pouco provável",
+    en: "1 - Not likely",
+    es: "1 - Poco probable"
   },
   highProbability: {
-    pt: "Muito provável",
-    en: "Very likely",
-    es: "Muy probable"
+    pt: "10 - Muito provável",
+    en: "10 - Very likely",
+    es: "10 - Muy probable"
   },
   question2: {
     pt: "Qual o principal motivo por ter dado essa nota?",
@@ -150,7 +150,12 @@ export const translations: Translations = {
     pt: "Área do Administrador",
     en: "Admin Area",
     es: "Área de Administrador"
-  }
+  },
+  summary: {
+    pt: "Suas Respostas",
+    en: "Your answers",
+    es: "Sus respuestas"
+  },
 };
 
 export type Language = "pt" | "en" | "es";

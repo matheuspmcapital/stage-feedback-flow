@@ -40,40 +40,37 @@ const SummaryScreen: React.FC<SummaryScreenProps> = ({
     >
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-center mb-2">{t("summary")}</h1>
-        <p className="text-lg text-center text-muted-foreground">
-          {t("summarySubtitle")}
-        </p>
       </div>
 
       <ScrollArea className="flex-grow mb-6 rounded-lg border">
         <div className="bg-card rounded-lg p-6">
           <div className="space-y-6">
             <div>
-              <h3 className="font-medium">{questionMap["recommend_score"] || t("recommendationScore")}</h3>
+              <h3 className="font-medium">{t("question1")}</h3>
               <div className="text-2xl mt-1">{npsData.recommendScore}</div>
             </div>
 
             <div>
-              <h3 className="font-medium">{questionMap["recommend_reason"] || t("recommendationReason")}</h3>
+              <h3 className="font-medium">{t("question2")}</h3>
               <div className="p-3 bg-muted rounded-md mt-1">
                 {npsData.recommendReason || t("notProvided")}
               </div>
             </div>
 
             <div>
-              <h3 className="font-medium">{questionMap["rehire_score"] || t("rehireScore")}</h3>
+              <h3 className="font-medium">{t("question3")}</h3>
               <div className="text-2xl mt-1">{npsData.rehireScore}</div>
             </div>
 
             <div>
-              <h3 className="font-medium">{questionMap["testimonial"] || t("testimonial")}</h3>
+              <h3 className="font-medium">{t("question4")}</h3>
               <div className="p-3 bg-muted rounded-md mt-1">
                 {npsData.testimonial || t("notProvided")}
               </div>
             </div>
 
             <div>
-              <h3 className="font-medium">{questionMap["can_publish"] || t("publishConsent")}</h3>
+              <h3 className="font-medium">{t("question5")}</h3>
               <div className="mt-1">
                 {npsData.canPublish ? t("yes") : t("no")}
               </div>
@@ -89,7 +86,7 @@ const SummaryScreen: React.FC<SummaryScreenProps> = ({
             {t("back")}
           </Button>
           <Button onClick={onSubmit} size="lg">
-            {t("submit")}
+            {t("sendAnswers")}
           </Button>
         </div>
       </div>

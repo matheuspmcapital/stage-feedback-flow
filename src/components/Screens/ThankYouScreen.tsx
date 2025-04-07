@@ -3,6 +3,7 @@ import React from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { motion } from "framer-motion";
 import { useNPS } from "../../contexts/NPSContext";
+import { Button } from "@/components/ui/button";
 
 const ThankYouScreen: React.FC = () => {
   const { t } = useLanguage();
@@ -24,38 +25,14 @@ const ThankYouScreen: React.FC = () => {
         />
         <h1 className="text-3xl font-bold">{t("thankYou")}</h1>
         <p className="text-lg text-muted-foreground max-w-md">
-          {t("thankYouMessage")}
+          {t("thankYouSubtitle")}
         </p>
-        
-        <div className="mt-10 p-6 bg-card rounded-lg shadow-sm w-full max-w-md">
-          <h2 className="text-lg font-medium mb-4">{t("yourFeedback")}</h2>
-          
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm font-medium">{t("recommendationScore")}</p>
-              <p className="text-2xl font-bold">{npsData.recommendScore}</p>
-            </div>
-            
-            {npsData.recommendReason && (
-              <div>
-                <p className="text-sm font-medium">{t("recommendationReason")}</p>
-                <p className="p-3 bg-muted rounded-md">{npsData.recommendReason}</p>
-              </div>
-            )}
-            
-            <div>
-              <p className="text-sm font-medium">{t("rehireScore")}</p>
-              <p className="text-2xl font-bold">{npsData.rehireScore}</p>
-            </div>
-            
-            {npsData.testimonial && (
-              <div>
-                <p className="text-sm font-medium">{t("testimonial")}</p>
-                <p className="p-3 bg-muted rounded-md">{npsData.testimonial}</p>
-              </div>
-            )}
-          </div>
-        </div>
+
+        <a href="https://stage.consulting">
+          <Button variant="outline" size="sm">
+            {t("learnMore")}
+          </Button>
+        </a>
       </div>
     </motion.div>
   );

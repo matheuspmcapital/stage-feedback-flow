@@ -30,6 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { Eye, ClipboardCopy } from "lucide-react";
 
 interface GeneratedCodesProps {
   codes: Code[];
@@ -51,12 +53,15 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
   const [sortField, setSortField] = useState<string>("generated_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+  
 
   const pageSize = 10;
   const [currentPage, setCurrentPage] = useState(1);
 
   // Calculate time spent for each code
   const calculateTimeSpent = (code: Code): string => {
+
+    
     if (!code.started_at || !code.completed_at) return "--";
     
     const startTime = new Date(code.started_at).getTime();
@@ -69,6 +74,16 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
     return `${minutes}m ${seconds}s`;
   };
 
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code).then(() => {
+      toast({
+        title: "Copied to Clipboard",
+        description: `Code "${code}" copied successfully.`
+      });
+    });
+  };
+
+  const { toast } = useToast();
   // Filter and sort codes
   const filteredCodes = codes.filter(code => {
     const matchesSearch = 
@@ -149,6 +164,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
     }
   };
 
+  
   return (
     <div className="space-y-4">
       <Card>
@@ -233,7 +249,18 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
               <TableBody>
                 {paginatedCodes.map((code) => (
                   <TableRow key={code.id}>
-                    <TableCell className="font-mono">{code.code}</TableCell>
+                    <TableCell className="font-mono">
+                      {code.code}
+
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleCopyCode(code.code)} 
+                        className="h-4 w-4 ml-2"
+                      >
+                        <ClipboardCopy className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                     <TableCell>
                       <div>
                         {code.name}
@@ -261,7 +288,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                       ) : code.started_at ? (
                         <Badge className="bg-orange-400">Started</Badge>
                       ) : (
-                        <Badge variant="outline">Pending</Badge>
+                        <Badge className="bg-red-400">Pending</Badge>
                       )}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
@@ -274,9 +301,9 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                       <Button 
                         onClick={() => setSelectedCode(code)} 
                         variant="ghost" 
-                        className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+                        className="flex h-8 p-2 data-[state=open]:bg-muted"
                       >
-                        View
+                        <Eye className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -325,7 +352,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
         open={!!selectedCode}
         onOpenChange={(open) => !open && setSelectedCode(null)}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh]">
+        <DialogContent className="max-w-3xl max-h-[90vh]" style={{overflow:"scroll"}}>
           <DialogHeader>
             <DialogTitle>Code Details: {selectedCode?.code}</DialogTitle>
             <DialogDescription>
