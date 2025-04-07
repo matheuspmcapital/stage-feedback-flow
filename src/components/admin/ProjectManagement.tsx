@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,8 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({
           id: data.id,
           name: data.name,
           company_id: data.company_id,
-          company_name: data.companies?.name
+          company_name: data.companies?.name,
+          created_at: data.created_at
         };
         
         onProjectAdded(newProject);

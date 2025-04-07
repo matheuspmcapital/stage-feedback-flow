@@ -15,31 +15,58 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-
-interface Response {
-  userName: string;
-  code: string;
-  recommendScore: number;
-  recommendReason: string;
-  rehireScore: number;
-  testimonial: string;
-  canPublish: boolean;
-  submittedAt: string;
-}
+import { CodeResponse } from "./AdminDashboard";
 
 interface ResponsesListProps {
-  responses: Response[];
+  responses: CodeResponse[];
+  isPreview: boolean;
 }
 
-const ResponsesList: React.FC<ResponsesListProps> = ({ responses }) => {
+const ResponsesList: React.FC<ResponsesListProps> = ({ responses, isPreview }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
+  };
+
+  // Extract score from answers
+  const getScore = (response: CodeResponse) => {
+    const scoreAnswer = response.answers.find(a => 
+      a.question_id === 'nps-score' || 
+      a.question_id === 'recommend_score'
+    );
+    return scoreAnswer ? parseInt(scoreAnswer.answer, 10) : 0;
+  };
+
+  // Extract rehire score
+  const getRehireScore = (response: CodeResponse) => {
+    const rehireAnswer = response.answers.find(a => a.question_id === 'rehire_score');
+    return rehireAnswer ? parseInt(rehireAnswer.answer, 10) : 0;
+  };
+
+  // Extract testimonial
+  const getTestimonial = (response: CodeResponse) => {
+    const testimonialAnswer = response.answers.find(a => a.question_id === 'testimonial');
+    return testimonialAnswer ? testimonialAnswer.answer : '';
+  };
+
+  // Extract recommendation reason
+  const getRecommendReason = (response: CodeResponse) => {
+    const reasonAnswer = response.answers.find(a => 
+      a.question_id === 'recommend_reason' || 
+      a.question_id === 'recommendReason'
+    );
+    return reasonAnswer ? reasonAnswer.answer : '';
+  };
+
+  // Check if can publish
+  const getCanPublish = (response: CodeResponse) => {
+    const publishAnswer = response.answers.find(a => a.question_id === 'can_publish');
+    return publishAnswer ? publishAnswer.answer === 'true' : false;
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Survey Responses</CardTitle>
+        <CardTitle>{isPreview ? "Recent Responses" : "Survey Responses"}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -56,29 +83,29 @@ const ResponsesList: React.FC<ResponsesListProps> = ({ responses }) => {
             </TableHeader>
             <TableBody>
               {responses.map((response) => (
-                <TableRow key={response.code}>
-                  <TableCell>{response.userName}</TableCell>
+                <TableRow key={response.id}>
+                  <TableCell>{response.name}</TableCell>
                   <TableCell className="font-bold">
-                    {response.recommendScore}
+                    {getScore(response)}
                   </TableCell>
                   <TableCell className="font-bold">
-                    {response.rehireScore}
+                    {getRehireScore(response)}
                   </TableCell>
-                  <TableCell>{response.canPublish ? "Yes" : "No"}</TableCell>
-                  <TableCell>{formatDate(response.submittedAt)}</TableCell>
+                  <TableCell>{getCanPublish(response) ? "Yes" : "No"}</TableCell>
+                  <TableCell>{formatDate(response.completed_at || response.started_at)}</TableCell>
                   <TableCell>
                     <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value={response.code}>
+                      <AccordionItem value={response.id}>
                         <AccordionTrigger className="py-1">Details</AccordionTrigger>
                         <AccordionContent>
                           <div className="space-y-2 p-2">
                             <div>
                               <h4 className="font-semibold">Reason:</h4>
-                              <p className="text-sm">{response.recommendReason}</p>
+                              <p className="text-sm">{getRecommendReason(response)}</p>
                             </div>
                             <div>
                               <h4 className="font-semibold">Testimonial:</h4>
-                              <p className="text-sm">{response.testimonial}</p>
+                              <p className="text-sm">{getTestimonial(response)}</p>
                             </div>
                           </div>
                         </AccordionContent>

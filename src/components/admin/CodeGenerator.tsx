@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,7 +115,9 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
           project_name: data.projects?.name,
           company_name: data.projects?.companies?.name,
           service_type: data.service_type,
-          generated_at: data.generated_at
+          generated_at: data.generated_at,
+          started_at: data.started_at,
+          completed_at: data.completed_at
         };
         
         onCodeGenerated(newCode);

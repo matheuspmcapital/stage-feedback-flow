@@ -102,6 +102,12 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
     }
   };
   
+  // Helper function to format dates consistently
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "--";
+    return new Date(dateString).toLocaleDateString();
+  };
+  
   // Calculate stats
   const calculateStats = (codes: Code[]) => {
     const total = codes.length;
@@ -245,13 +251,9 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
               .filter(answer => answer.survey_code_id === code.id)
               .map(answer => ({
                 question_id: answer.question_id,
-                answer: answer.answer
+                answer: typeof answer.answer === 'object' ? JSON.stringify(answer.answer) : answer.answer
               }));
               
-            // Find the score if available
-            const npsAnswer = codeAnswers.find(answer => answer.question_id === 'nps-score');
-            const score = npsAnswer ? parseInt(npsAnswer.answer, 10) : undefined;
-            
             return {
               id: code.id,
               email: code.email,
@@ -263,7 +265,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
               started_at: code.started_at || '',
               completed_at: code.completed_at || '',
               service_type: code.service_type,
-              score,
+              score: undefined,
               answers: codeAnswers
             };
           });
@@ -277,7 +279,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
         
         if (adminUsersError) throw adminUsersError;
         
-        // Transform admin users data with roles - make sure we handle cases where role might not exist
+        // Transform admin users data with roles
         const transformedAdminUsers: AdminUser[] = (adminUsersData || []).map(user => ({
           id: user.id,
           email: user.email,
@@ -414,7 +416,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
           
           <TabsContent value="codes" className="space-y-6">
             <h1 className="text-3xl font-bold">Generated Codes</h1>
-            <CodesList codes={codes} />
+            <CodesList codes={codes} formatDate={formatDate} />
           </TabsContent>
           
           <TabsContent value="generate" className="space-y-6">

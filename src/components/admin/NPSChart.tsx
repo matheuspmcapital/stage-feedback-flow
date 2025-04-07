@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { 
   BarChart, 
@@ -16,30 +15,34 @@ import {
   Line
 } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CodeResponse } from "./AdminDashboard";
 
 interface NPSChartProps {
-  data: {
-    userName: string;
-    recommendScore: number;
-    rehireScore: number;
-    serviceType: string;
-  }[];
-  strategyData: {
-    userName: string;
-    recommendScore: number;
-    rehireScore: number;
-  }[];
-  experienceData: {
-    userName: string;
-    recommendScore: number;
-    rehireScore: number;
-  }[];
+  responses: CodeResponse[];
 }
 
-const NPSChart: React.FC<NPSChartProps> = ({ data, strategyData, experienceData }) => {
+const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
   const [activeTab, setActiveTab] = useState("overall");
   
-  // Calculate overall NPS
+  const transformData = () => {
+    return responses.map(response => {
+      const npsAnswer = response.answers.find(a => a.question_id === 'nps-score' || a.question_id === 'recommend_score');
+      const rehireAnswer = response.answers.find(a => a.question_id === 'rehire_score');
+      
+      return {
+        userName: response.name,
+        recommendScore: npsAnswer ? parseInt(npsAnswer.answer, 10) : 0,
+        rehireScore: rehireAnswer ? parseInt(rehireAnswer.answer, 10) : 0,
+        serviceType: response.service_type
+      };
+    });
+  };
+  
+  const chartData = transformData();
+  
+  const strategyData = chartData.filter(item => item.serviceType === 'strategy');
+  const experienceData = chartData.filter(item => item.serviceType === 'experience');
+  
   const calculateNPS = (scores: number[]) => {
     if (scores.length === 0) return 0;
     
@@ -49,9 +52,8 @@ const NPSChart: React.FC<NPSChartProps> = ({ data, strategyData, experienceData 
     return Math.round((promoters - detractors) / scores.length * 100);
   };
   
-  // Extract scores for calculations
-  const recommendScores = data.map(item => item.recommendScore).filter(Boolean) as number[];
-  const rehireScores = data.map(item => item.rehireScore).filter(Boolean) as number[];
+  const recommendScores = chartData.map(item => item.recommendScore).filter(Boolean) as number[];
+  const rehireScores = chartData.map(item => item.rehireScore).filter(Boolean) as number[];
   
   const strategyRecommendScores = strategyData.map(item => item.recommendScore).filter(Boolean) as number[];
   const strategyRehireScores = strategyData.map(item => item.rehireScore).filter(Boolean) as number[];
@@ -59,7 +61,6 @@ const NPSChart: React.FC<NPSChartProps> = ({ data, strategyData, experienceData 
   const experienceRecommendScores = experienceData.map(item => item.recommendScore).filter(Boolean) as number[];
   const experienceRehireScores = experienceData.map(item => item.rehireScore).filter(Boolean) as number[];
   
-  // Calculate NPS scores
   const overallNPS = calculateNPS(recommendScores);
   const overallRehireNPS = calculateNPS(rehireScores);
   
@@ -69,7 +70,6 @@ const NPSChart: React.FC<NPSChartProps> = ({ data, strategyData, experienceData 
   const experienceNPS = calculateNPS(experienceRecommendScores);
   const experienceRehireNPS = calculateNPS(experienceRehireScores);
 
-  // Prepare data for pie charts
   const getPieData = (scores: number[]) => {
     const promoters = scores.filter(score => score >= 9).length;
     const passives = scores.filter(score => score > 6 && score < 9).length;
@@ -82,14 +82,12 @@ const NPSChart: React.FC<NPSChartProps> = ({ data, strategyData, experienceData 
     ].filter(segment => segment.value > 0);
   };
   
-  // Prepare data for comparison charts
   const comparisonData = [
     { name: 'Strategy', recommend: strategyNPS, rehire: strategyRehireNPS },
     { name: 'Experience', recommend: experienceNPS, rehire: experienceRehireNPS },
     { name: 'Overall', recommend: overallNPS, rehire: overallRehireNPS }
   ];
   
-  // Get pie data for each category
   const recommendPieData = getPieData(recommendScores);
   const rehirePieData = getPieData(rehireScores);
   
@@ -101,7 +99,6 @@ const NPSChart: React.FC<NPSChartProps> = ({ data, strategyData, experienceData 
   
   const COLORS = ['#4ade80', '#facc15', '#f87171'];
 
-  // Render pie charts for a specific dataset
   const renderPieCharts = (
     recommendPieData: { name: string; value: number }[],
     rehirePieData: { name: string; value: number }[],
@@ -259,11 +256,11 @@ const NPSChart: React.FC<NPSChartProps> = ({ data, strategyData, experienceData 
         <div className="mt-8">
           <h3 className="text-base font-medium mb-2">Scores by Client</h3>
           <div className="h-80">
-            {data.length > 0 ? (
+            {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={activeTab === 'strategy' ? strategyData : 
-                         activeTab === 'experience' ? experienceData : data}
+                         activeTab === 'experience' ? experienceData : chartData}
                   margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
