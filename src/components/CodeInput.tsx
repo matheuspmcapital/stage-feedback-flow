@@ -33,37 +33,42 @@ const CodeInput: React.FC<CodeInputProps> = ({ onValidCode }) => {
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen flex items-center justify-center p-4"
-    >
-      <LanguageSelector />
+    <>
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSelector />
+      </div>
       
-      <Card className="w-full max-w-md">
-        <CardHeader className="items-center">
-          <Logo />
-          <CardTitle>{t("enterCode")}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Input
-            value={inputCode}
-            onChange={(e) => setInputCode(e.target.value)}
-            placeholder="ABC123"
-            className="text-center text-xl py-6"
-            maxLength={10}
-          />
-          <Button
-            onClick={validateCode}
-            disabled={!inputCode || isValidating}
-            className="w-full py-6"
-            size="lg"
-          >
-            {isValidating ? "..." : t("continue")}
-          </Button>
-        </CardContent>
-      </Card>
-    </motion.div>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="z-10"
+      >
+        <Card className="w-full max-w-md backdrop-blur-sm bg-white/80 dark:bg-zinc-900/80 shadow-xl border border-white/20 dark:border-zinc-800/30">
+          <CardHeader className="items-center">
+            <Logo />
+            <CardTitle className="mt-2">{t("enterCode")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Input
+              value={inputCode}
+              onChange={(e) => setInputCode(e.target.value)}
+              placeholder="ABC123"
+              className="text-center text-xl py-6 bg-white/50 dark:bg-zinc-800/50 border-white/30 dark:border-zinc-700/50"
+              maxLength={10}
+            />
+            <Button
+              onClick={validateCode}
+              disabled={!inputCode || isValidating}
+              className="w-full py-6"
+              size="lg"
+            >
+              {isValidating ? "..." : t("continue")}
+            </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </>
   );
 };
 

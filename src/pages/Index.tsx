@@ -6,6 +6,7 @@ import CodeInput from "../components/CodeInput";
 import NPSFlow from "../components/NPSFlow";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 const Index = () => {
   const [searchParams] = useSearchParams();
@@ -86,7 +87,13 @@ const Index = () => {
     );
   }
 
-  return hasValidCode ? <NPSFlow /> : <CodeInput onValidCode={handleValidCode} />;
+  return hasValidCode ? (
+    <NPSFlow /> 
+  ) : (
+    <AuroraBackground>
+      <CodeInput onValidCode={handleValidCode} />
+    </AuroraBackground>
+  );
 };
 
 export default Index;

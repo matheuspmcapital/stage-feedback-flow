@@ -1,4 +1,5 @@
 
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,6 +35,16 @@
     --ring: 261 84% 74%;
 
     --radius: 0.5rem;
+    
+    /* Aurora background variables */
+    --white: #fff;
+    --black: #000;
+    --transparent: transparent;
+    --blue-300: #93c5fd;
+    --blue-400: #60a5fa;
+    --blue-500: #3b82f6;
+    --indigo-300: #a5b4fc;
+    --violet-200: #ddd6fe;
   }
 
   .dark {

@@ -91,6 +91,12 @@ export default {
         "slide-out-right": {
           "0%": { transform: "translateX(0)", opacity: "1" },
           "100%": { transform: "translateX(20%)", opacity: "0" }
+        },
+        "aurora": {
+          "0%": { backgroundPosition: "50% 50%, 50% 50%" },
+          "30%": { backgroundPosition: "0% 10%, 0% 50%" },
+          "60%": { backgroundPosition: "100% 0%, 100% 0%" },
+          "100%": { backgroundPosition: "50% 50%, 50% 50%" },
         }
       },
       animation: {
@@ -101,7 +107,8 @@ export default {
         "slide-in-right": "slide-in-right 0.4s ease-out",
         "slide-out-left": "slide-out-left 0.4s ease-out",
         "slide-in-left": "slide-in-left 0.4s ease-out",
-        "slide-out-right": "slide-out-right 0.4s ease-out"
+        "slide-out-right": "slide-out-right 0.4s ease-out",
+        "aurora": "aurora 15s ease infinite"
       }
     }
   },
