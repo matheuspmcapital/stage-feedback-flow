@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useNPS } from "../contexts/NPSContext";
+import { useLanguage } from "../contexts/LanguageContext";
 import CodeInput from "../components/CodeInput";
 import NPSFlow from "../components/NPSFlow";
 import { useToast } from "@/components/ui/use-toast";
@@ -11,10 +12,19 @@ import { AuroraBackground } from "@/components/ui/aurora-background";
 const Index = () => {
   const [searchParams] = useSearchParams();
   const codeParam = searchParams.get("code");
+  const langParam = searchParams.get("lang") as "pt" | "en" | "es" | null;
   const [hasValidCode, setHasValidCode] = useState(false);
   const [isLoading, setIsLoading] = useState(!!codeParam);
   const { setUserName, setCode, setCodeValidated } = useNPS();
+  const { setLanguage } = useLanguage();
   const { toast } = useToast();
+
+  // Set language from URL parameter if provided
+  useEffect(() => {
+    if (langParam && ["pt", "en", "es"].includes(langParam)) {
+      setLanguage(langParam);
+    }
+  }, [langParam, setLanguage]);
 
   // Validate code function
   const validateCode = async (code: string) => {
@@ -91,7 +101,7 @@ const Index = () => {
     <NPSFlow /> 
   ) : (
     <AuroraBackground>
-      <CodeInput onValidCode={handleValidCode} />
+      <CodeInput onValidCode={handleValidCode} prefilledCode={codeParam || ""} />
     </AuroraBackground>
   );
 };

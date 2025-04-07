@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useNPS } from "../contexts/NPSContext";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,13 @@ import { useToast } from "@/components/ui/use-toast";
 
 interface CodeInputProps {
   onValidCode: (code: string) => Promise<void>;
+  prefilledCode?: string;
 }
 
-const CodeInput: React.FC<CodeInputProps> = ({ onValidCode }) => {
+const CodeInput: React.FC<CodeInputProps> = ({ onValidCode, prefilledCode = "" }) => {
   const { t } = useLanguage();
   const { setUserName, setCode } = useNPS();
-  const [inputCode, setInputCode] = useState("");
+  const [inputCode, setInputCode] = useState(prefilledCode);
   const [isValidating, setIsValidating] = useState(false);
   const { toast } = useToast();
 
@@ -31,6 +32,13 @@ const CodeInput: React.FC<CodeInputProps> = ({ onValidCode }) => {
       setIsValidating(false);
     }
   };
+
+  // Auto-submit the code if it was prefilled
+  useEffect(() => {
+    if (prefilledCode) {
+      validateCode();
+    }
+  }, []);
 
   return (
     <>
