@@ -14,26 +14,34 @@ import {
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Code, Project } from "./AdminDashboard";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CodeGeneratorProps {
-  onCodeGenerated: (code: string, data: any) => void;
+  onCodeGenerated: (code: Code) => void;
+  projects: Project[];
 }
 
-const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated }) => {
+const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [company, setCompany] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [serviceType, setServiceType] = useState("experience");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
-  const generateRandomCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !email || !company) {
+    if (!name || !email || !projectId) {
       toast({
         variant: "destructive",
         title: "Missing Information",
@@ -42,32 +50,70 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated }) => {
       return;
     }
     
-    const newCode = generateRandomCode();
-    const codeData = {
-      name,
-      email,
-      company,
-      serviceType,
-      generatedAt: new Date().toISOString(),
-      code: newCode
-    };
-    
-    onCodeGenerated(newCode, codeData);
-    
-    toast({
-      title: "Code Generated",
-      description: `Code ${newCode} was created successfully.`
-    });
-    
-    // Reset form
-    setName("");
-    setEmail("");
-    setCompany("");
-    setServiceType("experience");
+    try {
+      setIsSubmitting(true);
+      
+      // Insert new code into Supabase
+      const { data, error } = await supabase
+        .from('survey_codes')
+        .insert({
+          code: Math.floor(100000 + Math.random() * 900000).toString(), // Will use DB function in production
+          name,
+          email,
+          project_id: projectId,
+          service_type: serviceType
+        })
+        .select(`
+          *,
+          projects:project_id (
+            name, 
+            companies:company_id (name)
+          )
+        `)
+        .single();
+      
+      if (error) throw error;
+      
+      // Transform the code data
+      const newCode: Code = {
+        id: data.id,
+        code: data.code,
+        name: data.name,
+        email: data.email,
+        project_id: data.project_id,
+        project_name: data.projects?.name,
+        company_name: data.projects?.companies?.name,
+        service_type: data.service_type,
+        generated_at: data.generated_at
+      };
+      
+      onCodeGenerated(newCode);
+      
+      toast({
+        title: "Code Generated",
+        description: `Code ${data.code} was created successfully.`
+      });
+      
+      // Reset form
+      setName("");
+      setEmail("");
+      setProjectId("");
+      setServiceType("experience");
+      setIsOpen(false);
+      
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error generating code",
+        description: error.message || "An error occurred while generating the code."
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button className="ml-auto">Generate New Code</Button>
       </DialogTrigger>
@@ -96,13 +142,19 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated }) => {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="company">Company Name</Label>
-            <Input
-              id="company"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              placeholder="Company Name"
-            />
+            <Label htmlFor="project">Project</Label>
+            <Select value={projectId} onValueChange={setProjectId}>
+              <SelectTrigger id="project">
+                <SelectValue placeholder="Select a project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map(project => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name} ({project.company_name})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label>Service Type</Label>
@@ -121,7 +173,9 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated }) => {
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancel</Button>
             </DialogClose>
-            <Button type="submit">Generate Code</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Generating..." : "Generate Code"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

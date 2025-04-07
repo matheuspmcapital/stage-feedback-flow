@@ -38,10 +38,7 @@ const ThankYouScreen: React.FC = () => {
         transition={{ delay: 0.4 }}
       >
         <Button
-          as="a"
-          href="https://stage.consulting"
-          target="_blank"
-          rel="noopener noreferrer"
+          onClick={() => window.open("https://stage.consulting", "_blank")}
           size="lg"
           className="px-8 py-6 text-lg"
         >

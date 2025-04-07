@@ -1,104 +1,162 @@
 
 import React, { createContext, useContext, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 export interface NPSData {
-  recommendScore: number | null;
+  recommendScore: number;
   recommendReason: string;
-  rehireScore: number | null;
+  rehireScore: number;
   testimonial: string;
   canPublish: boolean;
-  userName: string;
-  code: string;
 }
 
-export interface NPSContextProps {
+interface NPSProviderProps {
+  children: React.ReactNode;
+}
+
+interface NPSContextType {
   npsData: NPSData;
+  userName: string;
+  code: string;
+  setUserName: (name: string) => void;
+  setCode: (code: string) => void;
   setRecommendScore: (score: number) => void;
   setRecommendReason: (reason: string) => void;
   setRehireScore: (score: number) => void;
   setTestimonial: (testimonial: string) => void;
   setCanPublish: (canPublish: boolean) => void;
-  setUserName: (name: string) => void;
-  setCode: (code: string) => void;
-  resetData: () => void;
+  submitResponses: () => Promise<boolean>;
+  recordStep: (questionId: string, answer: any) => Promise<void>;
 }
 
-const initialNPSData: NPSData = {
-  recommendScore: null,
+const initialData: NPSData = {
+  recommendScore: 0,
   recommendReason: "",
-  rehireScore: null,
+  rehireScore: 0,
   testimonial: "",
   canPublish: false,
-  userName: "",
-  code: ""
 };
 
-const NPSContext = createContext<NPSContextProps>({
-  npsData: initialNPSData,
-  setRecommendScore: () => {},
-  setRecommendReason: () => {},
-  setRehireScore: () => {},
-  setTestimonial: () => {},
-  setCanPublish: () => {},
-  setUserName: () => {},
-  setCode: () => {},
-  resetData: () => {}
-});
+const NPSContext = createContext<NPSContextType | undefined>(undefined);
 
-export const useNPS = () => useContext(NPSContext);
+export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
+  const [npsData, setNpsData] = useState<NPSData>(initialData);
+  const [userName, setUserName] = useState("");
+  const [code, setCode] = useState("");
+  const { toast } = useToast();
 
-export const NPSProvider: React.FC<{ children: React.ReactNode }> = ({ 
-  children 
-}) => {
-  const [npsData, setNpsData] = useState<NPSData>(initialNPSData);
+  // Helper function to record each step of the survey
+  const recordStep = async (questionId: string, answer: any) => {
+    try {
+      if (!code) return;
+      
+      // Get the survey code record
+      const { data: codeData, error: codeError } = await supabase
+        .from('survey_codes')
+        .select('id')
+        .eq('code', code)
+        .single();
+      
+      if (codeError || !codeData) {
+        throw new Error("Invalid survey code");
+      }
+      
+      // Insert the answer
+      const { error } = await supabase
+        .from('survey_answers')
+        .insert({
+          survey_code_id: codeData.id,
+          question_id: questionId,
+          answer: typeof answer === 'object' ? JSON.stringify(answer) : String(answer)
+        });
+      
+      if (error) throw error;
+      
+    } catch (error) {
+      console.error("Error recording step:", error);
+    }
+  };
 
   const setRecommendScore = (score: number) => {
-    setNpsData(prev => ({ ...prev, recommendScore: score }));
+    setNpsData({ ...npsData, recommendScore: score });
+    recordStep("recommendScore", score);
   };
 
   const setRecommendReason = (reason: string) => {
-    setNpsData(prev => ({ ...prev, recommendReason: reason }));
+    setNpsData({ ...npsData, recommendReason: reason });
+    recordStep("recommendReason", reason);
   };
 
   const setRehireScore = (score: number) => {
-    setNpsData(prev => ({ ...prev, rehireScore: score }));
+    setNpsData({ ...npsData, rehireScore: score });
+    recordStep("rehireScore", score);
   };
 
   const setTestimonial = (testimonial: string) => {
-    setNpsData(prev => ({ ...prev, testimonial }));
+    setNpsData({ ...npsData, testimonial: testimonial });
+    recordStep("testimonial", testimonial);
   };
 
   const setCanPublish = (canPublish: boolean) => {
-    setNpsData(prev => ({ ...prev, canPublish }));
+    setNpsData({ ...npsData, canPublish: canPublish });
+    recordStep("canPublish", canPublish);
   };
 
-  const setUserName = (name: string) => {
-    setNpsData(prev => ({ ...prev, userName: name }));
-  };
-  
-  const setCode = (code: string) => {
-    setNpsData(prev => ({ ...prev, code }));
-  };
-
-  const resetData = () => {
-    setNpsData(initialNPSData);
+  // Submit all responses and mark survey as complete
+  const submitResponses = async (): Promise<boolean> => {
+    try {
+      if (!code) return false;
+      
+      // Mark the survey code as completed
+      const { error } = await supabase
+        .from('survey_codes')
+        .update({ completed_at: new Date().toISOString() })
+        .eq('code', code);
+      
+      if (error) throw error;
+      
+      // Record the final submission
+      await recordStep("submission", { submitted: true });
+      
+      return true;
+    } catch (error) {
+      console.error("Error submitting responses:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to submit your responses. Please try again."
+      });
+      return false;
+    }
   };
 
   return (
     <NPSContext.Provider
       value={{
         npsData,
+        userName,
+        code,
+        setUserName,
+        setCode,
         setRecommendScore,
         setRecommendReason,
         setRehireScore,
         setTestimonial,
         setCanPublish,
-        setUserName,
-        setCode,
-        resetData
+        submitResponses,
+        recordStep
       }}
     >
       {children}
     </NPSContext.Provider>
   );
+};
+
+export const useNPS = () => {
+  const context = useContext(NPSContext);
+  if (context === undefined) {
+    throw new Error("useNPS must be used within a NPSProvider");
+  }
+  return context;
 };

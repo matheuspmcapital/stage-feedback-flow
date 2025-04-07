@@ -10,24 +10,29 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-interface Code {
-  code: string;
-  name: string;
-  email: string;
-  company: string;
-  serviceType: string;
-  generatedAt: string;
-  submittedAt?: string;
-}
+import { Code } from "./AdminDashboard";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface CodesListProps {
   codes: Code[];
 }
 
 const CodesList: React.FC<CodesListProps> = ({ codes }) => {
-  const formatDate = (dateString: string) => {
+  const { toast } = useToast();
+  
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString();
+  };
+  
+  const handleViewCode = (code: Code) => {
+    // In a full implementation, this would navigate to a details page
+    toast({
+      title: "View Code Details",
+      description: `Viewing details for code: ${code.code}`
+    });
   };
 
   return (
@@ -43,35 +48,48 @@ const CodesList: React.FC<CodesListProps> = ({ codes }) => {
                 <TableHead>Code</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Company</TableHead>
+                <TableHead>Project</TableHead>
                 <TableHead>Service Type</TableHead>
                 <TableHead>Generated</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {codes.map((code) => (
-                <TableRow key={code.code}>
+                <TableRow key={code.id}>
                   <TableCell className="font-mono">{code.code}</TableCell>
                   <TableCell>{code.name}</TableCell>
-                  <TableCell>{code.company}</TableCell>
+                  <TableCell>{code.company_name || '-'}</TableCell>
+                  <TableCell>{code.project_name || '-'}</TableCell>
                   <TableCell>
-                    <Badge variant={code.serviceType === "experience" ? "default" : "outline"}>
-                      {code.serviceType}
+                    <Badge variant={code.service_type === "experience" ? "default" : "outline"}>
+                      {code.service_type}
                     </Badge>
                   </TableCell>
-                  <TableCell>{formatDate(code.generatedAt)}</TableCell>
+                  <TableCell>{formatDate(code.generated_at)}</TableCell>
                   <TableCell>
-                    {code.submittedAt ? (
+                    {code.completed_at ? (
                       <Badge variant="secondary">Completed</Badge>
                     ) : (
                       <Badge variant="outline">Pending</Badge>
                     )}
                   </TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleViewCode(code)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {codes.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     No codes generated yet
                   </TableCell>
                 </TableRow>

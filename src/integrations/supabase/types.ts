@@ -9,13 +9,162 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      admin_users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          password: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          password: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          password?: string
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          cnpj: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          cnpj: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          cnpj?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_answers: {
+        Row: {
+          answer: string
+          id: string
+          question_id: string
+          survey_code_id: string
+          timestamp: string
+        }
+        Insert: {
+          answer: string
+          id?: string
+          question_id: string
+          survey_code_id: string
+          timestamp?: string
+        }
+        Update: {
+          answer?: string
+          id?: string
+          question_id?: string
+          survey_code_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_answers_survey_code_id_fkey"
+            columns: ["survey_code_id"]
+            isOneToOne: false
+            referencedRelation: "survey_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_codes: {
+        Row: {
+          code: string
+          completed_at: string | null
+          email: string
+          generated_at: string
+          id: string
+          name: string
+          project_id: string
+          service_type: string
+          started_at: string | null
+        }
+        Insert: {
+          code: string
+          completed_at?: string | null
+          email: string
+          generated_at?: string
+          id?: string
+          name: string
+          project_id: string
+          service_type: string
+          started_at?: string | null
+        }
+        Update: {
+          code?: string
+          completed_at?: string | null
+          email?: string
+          generated_at?: string
+          id?: string
+          name?: string
+          project_id?: string
+          service_type?: string
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_codes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_unique_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

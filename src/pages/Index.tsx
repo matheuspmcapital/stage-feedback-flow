@@ -1,46 +1,91 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useNPS } from "../contexts/NPSContext";
 import CodeInput from "../components/CodeInput";
 import NPSFlow from "../components/NPSFlow";
-import { useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
-
-// Mock database of codes - in a real app this would come from a database
-const mockCodes = {
-  "123456": { name: "João Silva", company: "ABC Corp" },
-  "654321": { name: "Maria Santos", company: "XYZ Ltd" },
-  "111222": { name: "Carlos Oliveira", company: "Tech Solutions" }
-};
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [searchParams] = useSearchParams();
   const codeParam = searchParams.get("code");
   const [hasValidCode, setHasValidCode] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!codeParam);
   const { setUserName, setCode } = useNPS();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (codeParam) {
-      // Check if code is valid
-      const userData = (mockCodes as any)[codeParam];
+  // Validate code function
+  const validateCode = async (code: string) => {
+    try {
+      setIsLoading(true);
       
-      if (userData) {
-        setUserName(userData.name);
-        setCode(codeParam);
-        setHasValidCode(true);
-      } else {
+      const { data, error } = await supabase
+        .from('survey_codes')
+        .select('*')
+        .eq('code', code)
+        .single();
+      
+      if (error || !data) {
         toast({
           variant: "destructive",
           title: "Invalid Code",
           description: "The code provided is not valid.",
         });
+        return false;
       }
+      
+      // Update started_at if not already set
+      if (!data.started_at) {
+        await supabase
+          .from('survey_codes')
+          .update({ started_at: new Date().toISOString() })
+          .eq('id', data.id);
+      }
+      
+      setUserName(data.name);
+      setCode(code);
+      return true;
+      
+    } catch (error) {
+      console.error("Error validating code:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An error occurred while validating the code.",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
     }
-  }, [codeParam, setUserName, setCode, toast]);
+  };
 
-  return hasValidCode ? <NPSFlow /> : <CodeInput onValidCode={() => setHasValidCode(true)} />;
+  // Check code from URL param on component mount
+  useEffect(() => {
+    if (codeParam) {
+      validateCode(codeParam).then(isValid => {
+        if (isValid) {
+          setHasValidCode(true);
+        }
+      });
+    }
+  }, [codeParam]);
+
+  // Handle code input validation
+  const handleValidCode = async (inputCode: string) => {
+    const isValid = await validateCode(inputCode);
+    setHasValidCode(isValid);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-lg">Loading...</p>
+      </div>
+    );
+  }
+
+  return hasValidCode ? <NPSFlow /> : <CodeInput onValidCode={handleValidCode} />;
 };
 
 export default Index;
