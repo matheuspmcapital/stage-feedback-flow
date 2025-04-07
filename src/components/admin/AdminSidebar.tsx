@@ -13,6 +13,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Building, BarChart, Code, Users, LogOut, FileText } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Logo from "../Logo";
 
 interface AdminSidebarProps {
@@ -57,9 +58,21 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-4">
+        <div className="flex items-center gap-2 px-4 py-4">
           <Logo />
           <span className="font-bold text-lg">Admin</span>
+        </div>
+        <div className="flex items-center justify-between px-4 pb-4 border-b">
+          <div className="flex items-center gap-3">
+            <Avatar>
+              <AvatarImage src="" />
+              <AvatarFallback>AD</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm font-medium">Admin User</p>
+              <p className="text-xs text-muted-foreground">admin@stage.consulting</p>
+            </div>
+          </div>
         </div>
       </SidebarHeader>
       

@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
 export interface NPSData {
-  userName: string;  // Add userName to the interface
+  userName: string;
+  code: string;  // Add code property to the interface
   recommendScore: number;
   recommendReason: string;
   rehireScore: number;
@@ -20,6 +21,7 @@ interface NPSContextType {
   npsData: NPSData;
   userName: string;
   code: string;
+  codeValidated: boolean;  // Add codeValidated property to the interface
   setUserName: (name: string) => void;
   setCode: (code: string) => void;
   setRecommendScore: (score: number) => void;
@@ -32,7 +34,8 @@ interface NPSContextType {
 }
 
 const initialData: NPSData = {
-  userName: "",  // Initialize userName
+  userName: "",
+  code: "",  // Initialize code property
   recommendScore: 0,
   recommendReason: "",
   rehireScore: 0,
@@ -46,12 +49,20 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
   const [npsData, setNpsData] = useState<NPSData>(initialData);
   const [userName, setUserName] = useState("");
   const [code, setCode] = useState("");
+  const [codeValidated, setCodeValidated] = useState(false);  // Add codeValidated state
   const { toast } = useToast();
 
-  // Update npsData when userName changes
+  // Update npsData when userName or code changes
   React.useEffect(() => {
-    setNpsData(prev => ({ ...prev, userName }));
-  }, [userName]);
+    setNpsData(prev => ({ ...prev, userName, code }));
+  }, [userName, code]);
+
+  // Update codeValidated when code is set
+  React.useEffect(() => {
+    if (code) {
+      setCodeValidated(true);
+    }
+  }, [code]);
 
   // Helper function to record each step of the survey
   const recordStep = async (questionId: string, answer: any) => {
@@ -87,17 +98,17 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
 
   const setRecommendScore = (score: number) => {
     setNpsData({ ...npsData, recommendScore: score });
-    recordStep("recommendScore", score);
+    recordStep("recommend_score", score);
   };
 
   const setRecommendReason = (reason: string) => {
     setNpsData({ ...npsData, recommendReason: reason });
-    recordStep("recommendReason", reason);
+    recordStep("recommend_reason", reason);
   };
 
   const setRehireScore = (score: number) => {
     setNpsData({ ...npsData, rehireScore: score });
-    recordStep("rehireScore", score);
+    recordStep("rehire_score", score);
   };
 
   const setTestimonial = (testimonial: string) => {
@@ -107,7 +118,7 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
 
   const setCanPublish = (canPublish: boolean) => {
     setNpsData({ ...npsData, canPublish: canPublish });
-    recordStep("canPublish", canPublish);
+    recordStep("can_publish", canPublish);
   };
 
   // Submit all responses and mark survey as complete
@@ -144,6 +155,7 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         npsData,
         userName,
         code,
+        codeValidated,
         setUserName,
         setCode,
         setRecommendScore,

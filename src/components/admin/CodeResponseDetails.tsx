@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Code } from "./AdminDashboard";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface CodeResponseDetailsProps {
   code: Code;
@@ -94,109 +95,111 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
   };
 
   return (
-    <div className="space-y-4 py-4">
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <p className="text-sm font-medium">Name</p>
-          <p>{code.name}</p>
+    <ScrollArea className="h-[calc(100vh-120px)]">
+      <div className="space-y-4 py-4">
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <p className="text-sm font-medium">Name</p>
+            <p>{code.name}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Email</p>
+            <p>{code.email}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Project</p>
+            <p>{code.project_name || '-'}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Company</p>
+            <p>{code.company_name || '-'}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Service Type</p>
+            <p>
+              <Badge variant={code.service_type === "experience" ? "default" : "outline"}>
+                {code.service_type}
+              </Badge>
+            </p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Status</p>
+            <p>
+              {code.completed_at ? (
+                <Badge className="bg-green-500">Completed</Badge>
+              ) : code.started_at ? (
+                <Badge className="bg-orange-400">Started</Badge>
+              ) : (
+                <Badge variant="outline">Pending</Badge>
+              )}
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-medium">Email</p>
-          <p>{code.email}</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium">Project</p>
-          <p>{code.project_name || '-'}</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium">Company</p>
-          <p>{code.company_name || '-'}</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium">Service Type</p>
-          <p>
-            <Badge variant={code.service_type === "experience" ? "default" : "outline"}>
-              {code.service_type}
-            </Badge>
-          </p>
-        </div>
-        <div>
-          <p className="text-sm font-medium">Status</p>
-          <p>
-            {code.completed_at ? (
-              <Badge className="bg-green-500">Completed</Badge>
-            ) : code.started_at ? (
-              <Badge className="bg-orange-400">Started</Badge>
-            ) : (
-              <Badge variant="outline">Pending</Badge>
-            )}
-          </p>
-        </div>
-      </div>
 
-      <Separator />
+        <Separator />
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-sm font-medium">Generated</p>
-          <p>{formatDate(code.generated_at)}</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm font-medium">Generated</p>
+            <p>{formatDate(code.generated_at)}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Started</p>
+            <p>{formatDate(code.started_at)}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Completed</p>
+            <p>{formatDate(code.completed_at)}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Time Spent</p>
+            <p>{timeSpent}</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-medium">Started</p>
-          <p>{formatDate(code.started_at)}</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium">Completed</p>
-          <p>{formatDate(code.completed_at)}</p>
-        </div>
-        <div>
-          <p className="text-sm font-medium">Time Spent</p>
-          <p>{timeSpent}</p>
-        </div>
-      </div>
 
-      {isLoading ? (
-        <div className="py-8 text-center">Loading responses...</div>
-      ) : Object.keys(responses).length > 0 ? (
-        <>
-          <Separator />
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Survey Responses</h3>
-            
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm font-medium">Recommendation Score</p>
-                <p className="text-2xl font-bold">{responses.recommendScore || '-'}</p>
-              </div>
+        {isLoading ? (
+          <div className="py-8 text-center">Loading responses...</div>
+        ) : Object.keys(responses).length > 0 ? (
+          <>
+            <Separator />
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Survey Responses</h3>
               
-              <div>
-                <p className="text-sm font-medium">Recommendation Reason</p>
-                <p className="p-2 bg-muted rounded-md">{responses.recommendReason || '-'}</p>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium">Rehire Score</p>
-                <p className="text-2xl font-bold">{responses.rehireScore || '-'}</p>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium">Testimonial</p>
-                <p className="p-2 bg-muted rounded-md">{responses.testimonial || '-'}</p>
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium">Can Publish</p>
-                <p>{responses.canPublish ? 'Yes' : 'No'}</p>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium">Recommendation Score</p>
+                  <p className="text-2xl font-bold">{responses.recommendScore || '-'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm font-medium">Recommendation Reason</p>
+                  <p className="p-2 bg-muted rounded-md">{responses.recommendReason || '-'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm font-medium">Rehire Score</p>
+                  <p className="text-2xl font-bold">{responses.rehireScore || '-'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm font-medium">Testimonial</p>
+                  <p className="p-2 bg-muted rounded-md">{responses.testimonial || '-'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm font-medium">Can Publish</p>
+                  <p>{responses.canPublish ? 'Yes' : 'No'}</p>
+                </div>
               </div>
             </div>
+          </>
+        ) : (
+          <div className="py-8 text-center text-muted-foreground">
+            No responses received yet
           </div>
-        </>
-      ) : (
-        <div className="py-8 text-center text-muted-foreground">
-          No responses received yet
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </ScrollArea>
   );
 };
 

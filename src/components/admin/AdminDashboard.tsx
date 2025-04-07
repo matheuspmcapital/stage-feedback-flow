@@ -13,7 +13,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import AdminSidebar from "./AdminSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock } from "lucide-react";
+import { Clock, TrendingUp, Users, Code as CodeIcon } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Interfaces for our data types
 export interface Company {
@@ -175,9 +176,6 @@ const AdminDashboard: React.FC = () => {
         if (adminUsersError) throw adminUsersError;
         setAdminUsers(adminUsersData || []);
         
-        // For now, we'll just leave the mock responses
-        // but in a real app, we would fetch them from survey_answers
-        
       } catch (error: any) {
         toast({
           variant: "destructive",
@@ -216,78 +214,98 @@ const AdminDashboard: React.FC = () => {
     rehireScore: response.rehireScore
   }));
 
+  // Calculate some quick metrics for the dashboard
+  const completedSurveys = codes.filter(c => c.completed_at).length;
+  const pendingSurveys = codes.filter(c => !c.started_at).length;
+  const progressSurveys = codes.filter(c => c.started_at && !c.completed_at).length;
+  const completionRate = codes.length > 0 
+    ? Math.round((completedSurveys / codes.length) * 100) 
+    : 0;
+
   // Render dashboard section with summary cards and charts
   const renderDashboard = () => (
     <>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-4">NPS Dashboard</h2>
-        <NPSChart data={chartData} />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Codes</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Surveys</CardTitle>
+            <CodeIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{codes.length}</p>
-            <p className="text-sm text-muted-foreground">Total generated codes</p>
-            <button 
-              className="text-sm text-blue-500 mt-2" 
-              onClick={() => setActiveSection("generatedCodes")}
-            >
-              View all codes
-            </button>
+            <div className="text-2xl font-bold">{codes.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {codes.length} total generated surveys
+            </p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader>
-            <CardTitle>Companies & Projects</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{companies.length} / {projects.length}</p>
-            <p className="text-sm text-muted-foreground">Companies / Projects</p>
-            <div className="flex gap-4 mt-2">
-              <button 
-                className="text-sm text-blue-500" 
-                onClick={() => setActiveSection("companies")}
-              >
-                Manage Companies
-              </button>
-              <button 
-                className="text-sm text-blue-500" 
-                onClick={() => setActiveSection("projects")}
-              >
-                Manage Projects
-              </button>
-            </div>
+            <div className="text-2xl font-bold">{completionRate}%</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {completedSurveys} completed, {pendingSurveys} pending, {progressSurveys} in progress
+            </p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Average Response Time</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Companies & Projects</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{companies.length} / {projects.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Companies / Projects in system
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Avg. Response Time</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{averageResponseTime}</p>
-            <p className="text-sm text-muted-foreground">
+            <div className="text-2xl font-bold">{averageResponseTime}</div>
+            <p className="text-xs text-muted-foreground mt-1">
               From {codes.filter(c => c.completed_at).length} completed surveys
             </p>
           </CardContent>
         </Card>
       </div>
-      
-      <CodesList codes={codes.slice(0, 5)} />
-      <div className="mt-4 flex justify-center">
-        <button 
-          className="text-sm text-blue-500" 
-          onClick={() => setActiveSection("generatedCodes")}
-        >
-          View all {codes.length} codes
-        </button>
+
+      <div className="mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>NPS Dashboard</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NPSChart data={chartData} />
+          </CardContent>
+        </Card>
       </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Survey Codes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CodesList codes={codes.slice(0, 5)} />
+          <div className="mt-4 flex justify-center">
+            <button 
+              className="text-sm text-blue-500" 
+              onClick={() => setActiveSection("generatedCodes")}
+            >
+              View all {codes.length} codes
+            </button>
+          </div>
+        </CardContent>
+      </Card>
     </>
   );
 
@@ -343,7 +361,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <SidebarProvider>
-      <div className="flex w-full bg-muted/20">
+      <div className="flex w-full">
         <AdminSidebar 
           activeSection={activeSection}
           onSectionChange={setActiveSection}
@@ -351,9 +369,9 @@ const AdminDashboard: React.FC = () => {
         />
 
         <SidebarInset>
-          <header className="bg-white border-b p-4">
-            <div className="container mx-auto flex justify-between items-center">
-              <h1 className="text-xl font-bold">
+          <ScrollArea className="w-full">
+            <div className="container mx-auto p-6">
+              <h1 className="text-2xl font-bold mb-6">
                 {activeSection === "dashboard" && "Dashboard"}
                 {activeSection === "companies" && "Companies"}
                 {activeSection === "projects" && "Projects"}
@@ -361,12 +379,10 @@ const AdminDashboard: React.FC = () => {
                 {activeSection === "generatedCodes" && "Generated Codes"}
                 {activeSection === "responses" && "Survey Responses"}
               </h1>
+              
+              {renderContent()}
             </div>
-          </header>
-          
-          <main className="container mx-auto p-4 py-6">
-            {renderContent()}
-          </main>
+          </ScrollArea>
         </SidebarInset>
       </div>
     </SidebarProvider>
