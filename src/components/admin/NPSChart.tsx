@@ -1,9 +1,11 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend, Cell } from 'recharts';
 import { CodeResponse } from './AdminDashboard';
 import { useNPS } from '@/contexts/NPSContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 
 interface NPSChartProps {
   responses: CodeResponse[];
@@ -18,15 +20,32 @@ interface NPSData {
 
 const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
   const { getNPSCategory } = useNPS();
+  const [filter, setFilter] = useState<string>("all");
+
+  // Get unique service types for filter options
+  const serviceTypes = useMemo(() => {
+    const types = new Set<string>();
+    responses.forEach(response => {
+      if (response.service_type) {
+        types.add(response.service_type);
+      }
+    });
+    return Array.from(types);
+  }, [responses]);
 
   const processResponses = useMemo(() => {
+    // Filter responses based on selected filter
+    const filteredResponses = filter === "all" 
+      ? responses 
+      : responses.filter(r => r.service_type === filter);
+
     let promoters = 0;
     let neutrals = 0;
     let detractors = 0;
     let total = 0;
 
     // Process all responses to count NPS categories
-    responses.forEach(response => {
+    filteredResponses.forEach(response => {
       const recommendScoreAnswer = response.answers?.find(a => a.question_id === 'recommend_score');
       
       if (recommendScoreAnswer) {
@@ -78,10 +97,69 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
       neutrals,
       detractors
     };
-  }, [responses, getNPSCategory]);
+  }, [responses, getNPSCategory, filter]);
+
+  // Compare function to show side-by-side comparison
+  const compareData = useMemo(() => {
+    if (serviceTypes.length <= 1) return null;
+
+    // Group data by service type
+    const typeData: { [key: string]: { nps: number, responses: number } } = {};
+    
+    serviceTypes.forEach(type => {
+      const typeResponses = responses.filter(r => r.service_type === type);
+      let promoters = 0;
+      let detractors = 0;
+      let total = 0;
+
+      typeResponses.forEach(response => {
+        const recommendScoreAnswer = response.answers?.find(a => a.question_id === 'recommend_score');
+        
+        if (recommendScoreAnswer) {
+          const score = parseInt(recommendScoreAnswer.answer);
+          if (!isNaN(score)) {
+            const category = getNPSCategory(score);
+            
+            if (category === 'promoter') promoters++;
+            else if (category === 'detractor') detractors++;
+            
+            total++;
+          }
+        }
+      });
+
+      const npsScore = total > 0 
+        ? Math.round((promoters - detractors) / total * 100) 
+        : 0;
+
+      typeData[type] = { 
+        nps: npsScore,
+        responses: total 
+      };
+    });
+
+    return typeData;
+  }, [responses, serviceTypes, getNPSCategory]);
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">NPS Analysis</h3>
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by service type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Responses</SelectItem>
+            {serviceTypes.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -120,7 +198,13 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
       </div>
 
       <div className="h-[300px]">
-        <ResponsiveContainer width="100%" height="100%">
+        <ChartContainer 
+          config={{ 
+            promoters: { color: '#10b981' }, 
+            neutrals: { color: '#f59e0b' }, 
+            detractors: { color: '#ef4444' } 
+          }}
+        >
           <BarChart
             data={processResponses.chartData}
             margin={{
@@ -134,7 +218,12 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
             <XAxis dataKey="name" />
             <YAxis unit="%" />
             <Tooltip 
-              formatter={(value) => [`${value}%`, 'Percentage']}
+              content={(props) => (
+                <ChartTooltipContent 
+                  {...props} 
+                  formatter={(value) => [`${value}%`, 'Percentage']}
+                />
+              )}
             />
             <Legend />
             <Bar dataKey="value" name="Percentage">
@@ -143,8 +232,42 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
               ))}
             </Bar>
           </BarChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       </div>
+
+      {compareData && serviceTypes.length > 1 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Service Type Comparison</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {Object.entries(compareData).map(([type, data]) => (
+                <div key={type} className="p-4 border rounded-lg">
+                  <h3 className="font-medium text-lg capitalize mb-2">{type}</h3>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-muted-foreground">NPS Score</p>
+                      <p className="text-2xl font-bold">{data.nps}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Responses</p>
+                      <p className="text-xl">{data.responses}</p>
+                    </div>
+                    <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
+                      data.nps >= 50 ? 'bg-green-100 text-green-700' :
+                      data.nps >= 0 ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      <span className="font-bold">{data.nps}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

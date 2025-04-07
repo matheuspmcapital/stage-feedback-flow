@@ -7,6 +7,15 @@ import ProgressBar from "../ProgressBar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+// Map question IDs to full questions text
+const questionMap: Record<string, string> = {
+  "recommend_score": "How likely are you to recommend our services to a friend or colleague?",
+  "recommend_reason": "What's the main reason for your score?",
+  "rehire_score": "How likely are you to work with us again?",
+  "testimonial": "Would you like to share a testimonial about your experience?",
+  "can_publish": "Can we publish your feedback publicly?"
+};
+
 interface SummaryScreenProps {
   onNext: () => void;
   onPrev: () => void;
@@ -40,31 +49,31 @@ const SummaryScreen: React.FC<SummaryScreenProps> = ({
         <div className="bg-card rounded-lg p-6">
           <div className="space-y-6">
             <div>
-              <h3 className="font-medium">{t("recommendationScore")}</h3>
+              <h3 className="font-medium">{questionMap["recommend_score"] || t("recommendationScore")}</h3>
               <div className="text-2xl mt-1">{npsData.recommendScore}</div>
             </div>
 
             <div>
-              <h3 className="font-medium">{t("recommendationReason")}</h3>
+              <h3 className="font-medium">{questionMap["recommend_reason"] || t("recommendationReason")}</h3>
               <div className="p-3 bg-muted rounded-md mt-1">
                 {npsData.recommendReason || t("notProvided")}
               </div>
             </div>
 
             <div>
-              <h3 className="font-medium">{t("rehireScore")}</h3>
+              <h3 className="font-medium">{questionMap["rehire_score"] || t("rehireScore")}</h3>
               <div className="text-2xl mt-1">{npsData.rehireScore}</div>
             </div>
 
             <div>
-              <h3 className="font-medium">{t("testimonial")}</h3>
+              <h3 className="font-medium">{questionMap["testimonial"] || t("testimonial")}</h3>
               <div className="p-3 bg-muted rounded-md mt-1">
                 {npsData.testimonial || t("notProvided")}
               </div>
             </div>
 
             <div>
-              <h3 className="font-medium">{t("publishConsent")}</h3>
+              <h3 className="font-medium">{questionMap["can_publish"] || t("publishConsent")}</h3>
               <div className="mt-1">
                 {npsData.canPublish ? t("yes") : t("no")}
               </div>

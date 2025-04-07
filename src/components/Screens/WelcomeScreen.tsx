@@ -33,7 +33,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
         className="text-center max-w-xl mx-auto"
       >
         <h1 className="text-2xl sm:text-3xl font-bold mb-4">
-          {t("welcomeHeader", { name: userName })}
+          {t("welcomeHeader")}
         </h1>
         <p className="text-lg text-muted-foreground mb-6">
           {t("welcomeText")}
