@@ -217,8 +217,9 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
             <YAxis unit="%" />
+            {/* Fixed the tooltip by using the content prop properly */}
             <Tooltip 
-              content={(props) => (
+              content={props => (
                 <ChartTooltipContent 
                   {...props} 
                   formatter={(value) => [`${value}%`, 'Percentage']}
