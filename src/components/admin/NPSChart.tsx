@@ -1,10 +1,11 @@
+
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend, Cell } from 'recharts';
 import { CodeResponse } from './AdminDashboard';
 import { useNPS } from '@/contexts/NPSContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface NPSChartProps {
   responses: CodeResponse[];
@@ -33,6 +34,7 @@ const CustomTooltip = (props: any) => {
 const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
   const { getNPSCategory } = useNPS();
   const [filter, setFilter] = useState<string>("all");
+  const [metric, setMetric] = useState<string>("recommend_score");
 
   const serviceTypes = useMemo(() => {
     const types = new Set<string>();
@@ -55,10 +57,10 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
     let total = 0;
 
     filteredResponses.forEach(response => {
-      const recommendScoreAnswer = response.answers?.find(a => a.question_id === 'recommend_score');
+      const metricAnswer = response.answers?.find(a => a.question_id === metric);
       
-      if (recommendScoreAnswer) {
-        const score = parseInt(recommendScoreAnswer.answer);
+      if (metricAnswer) {
+        const score = parseInt(metricAnswer.answer);
         if (!isNaN(score)) {
           const category = getNPSCategory(score);
           
@@ -104,7 +106,7 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
       neutrals,
       detractors
     };
-  }, [responses, getNPSCategory, filter]);
+  }, [responses, getNPSCategory, filter, metric]);
 
   const compareData = useMemo(() => {
     if (serviceTypes.length <= 1) return null;
@@ -118,10 +120,10 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
       let total = 0;
 
       typeResponses.forEach(response => {
-        const recommendScoreAnswer = response.answers?.find(a => a.question_id === 'recommend_score');
+        const metricAnswer = response.answers?.find(a => a.question_id === metric);
         
-        if (recommendScoreAnswer) {
-          const score = parseInt(recommendScoreAnswer.answer);
+        if (metricAnswer) {
+          const score = parseInt(metricAnswer.answer);
           if (!isNaN(score)) {
             const category = getNPSCategory(score);
             
@@ -144,25 +146,44 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
     });
 
     return typeData;
-  }, [responses, serviceTypes, getNPSCategory]);
+  }, [responses, serviceTypes, getNPSCategory, metric]);
+
+  const getMetricTitle = () => {
+    return metric === 'recommend_score' 
+      ? 'Recommendation NPS' 
+      : 'Rehire NPS';
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">NPS Analysis</h3>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by service type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Responses</SelectItem>
-            {serviceTypes.map((type) => (
-              <SelectItem key={type} value={type}>
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col md:flex-row md:items-center gap-4 justify-between">
+        <h3 className="text-lg font-medium">{getMetricTitle()}</h3>
+        <div className="flex items-center gap-2">
+          <Tabs 
+            value={metric} 
+            onValueChange={setMetric} 
+            className="w-[240px]"
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="recommend_score">Recommendation</TabsTrigger>
+              <TabsTrigger value="rehire_score">Rehire</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by service type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Responses</SelectItem>
+              {serviceTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -202,22 +223,11 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
         </Card>
       </div>
 
-      <div className="h-[300px]">
-        <ChartContainer 
-          config={{ 
-            promoters: { color: '#10b981' }, 
-            neutrals: { color: '#f59e0b' }, 
-            detractors: { color: '#ef4444' } 
-          }}
-        >
+      <div className="h-[250px] mt-4">
+        <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={processResponses.chartData}
-            margin={{
-              top: 20,
-              right: 30,
-              left: 20,
-              bottom: 5,
-            }}
+            margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -230,7 +240,7 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
               ))}
             </Bar>
           </BarChart>
-        </ChartContainer>
+        </ResponsiveContainer>
       </div>
 
       {compareData && serviceTypes.length > 1 && (

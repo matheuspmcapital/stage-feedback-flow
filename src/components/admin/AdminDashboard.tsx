@@ -10,7 +10,6 @@ import { Session } from "@supabase/supabase-js";
 import GeneratedCodes from "./GeneratedCodes";
 import CompanyManagement from "./CompanyManagement";
 import ProjectManagement from "./ProjectManagement";
-import AdminUserManagement from "./AdminUserManagement";
 
 export interface CodeResponse {
   id: string;
@@ -73,7 +72,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
   const [codes, setCodes] = useState<Code[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -248,21 +246,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
           });
           
         setCodeResponses(processedResponses);
-        
-        const { data: adminUsersData, error: adminUsersError } = await supabase
-          .from('admin_users')
-          .select('*');
-        
-        if (adminUsersError) throw adminUsersError;
-        
-        const transformedAdminUsers: AdminUser[] = (adminUsersData || []).map(user => ({
-          id: user.id,
-          email: user.email,
-          created_at: user.created_at,
-          role: user.role || 'partner'
-        }));
-        
-        setAdminUsers(transformedAdminUsers);
       } catch (error: any) {
         toast({
           variant: "destructive",
@@ -276,10 +259,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
     
     fetchData();
   }, [session, toast]);
-  
-  const handleAdminUserAdded = (newUser: AdminUser) => {
-    setAdminUsers([...adminUsers, newUser]);
-  };
   
   const handleCompanyAdded = (company: Company) => {
     setCompanies([...companies, company]);
@@ -368,7 +347,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
             <div className="grid grid-cols-1 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>NPS Score Distribution</CardTitle>
+                  <CardTitle>NPS Analysis</CardTitle>
                 </CardHeader>
                 <div className="p-6">
                   <NPSChart responses={codeResponses} />
@@ -401,15 +380,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
               projects={projects} 
               companies={companies} 
               onProjectAdded={handleProjectAdded} 
-            />
-          </TabsContent>
-          
-          <TabsContent value="admins" className="space-y-6">
-            <h1 className="text-3xl font-bold">Admin Users Management</h1>
-            <AdminUserManagement 
-              adminUsers={adminUsers} 
-              onAdminUserAdded={handleAdminUserAdded} 
-              userRole={userRole} 
             />
           </TabsContent>
         </Tabs>
