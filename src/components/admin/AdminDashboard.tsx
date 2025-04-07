@@ -53,7 +53,7 @@ export interface Code {
   project_name?: string;
   company_name?: string;
   service_type: string;
-  language?: string;
+  language: string;
   generated_at: string;
   started_at: string | null;
   completed_at: string | null;
