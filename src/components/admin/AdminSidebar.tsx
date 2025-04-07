@@ -39,19 +39,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: BarChart,
     },
     {
-      title: "Survey Responses",
-      id: "responses",
-      icon: FileText,
-    },
-    {
       title: "Generated Codes",
       id: "codes",
       icon: Code,
-    },
-    {
-      title: "Generate Code",
-      id: "generate",
-      icon: Plus,
     },
     {
       title: "Companies",
@@ -120,8 +110,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 <AvatarImage src="" />
                 <AvatarFallback>{getUserInitials(userEmail)}</AvatarFallback>
               </Avatar>
-              <div>
-                <p className="text-sm font-medium">{userEmail}</p>
+              <div className="overflow-hidden">
+                <p className="text-sm font-medium truncate max-w-[140px]">{userEmail}</p>
               </div>
             </div>
             <SidebarMenuButton onClick={onLogout} variant="outline" className="w-full">

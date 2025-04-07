@@ -23,10 +23,23 @@ interface FormattedResponse {
   canPublish?: boolean;
 }
 
+// Helper function to categorize NPS scores
+const getNPSCategory = (score: number): { category: string; color: string } => {
+  if (score >= 9) {
+    return { category: "Promoter", color: "bg-green-500" };
+  } else if (score >= 7) {
+    return { category: "Neutral", color: "bg-yellow-500" };
+  } else {
+    return { category: "Detractor", color: "bg-red-500" };
+  }
+};
+
 const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
   const [responses, setResponses] = useState<FormattedResponse>({});
   const [isLoading, setIsLoading] = useState(true);
   const [timeSpent, setTimeSpent] = useState<string>('-');
+  const [recommendCategory, setRecommendCategory] = useState<{ category: string; color: string }>({ category: "", color: "" });
+  const [rehireCategory, setRehireCategory] = useState<{ category: string; color: string }>({ category: "", color: "" });
 
   // Format date to dd/mm/yy HH:MM:SS
   const formatDate = (dateString: string | undefined) => {
@@ -63,12 +76,20 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
             switch (item.question_id) {
               case 'recommend_score':
                 formatted.recommendScore = item.answer;
+                const recScore = parseInt(item.answer, 10);
+                if (!isNaN(recScore)) {
+                  setRecommendCategory(getNPSCategory(recScore));
+                }
                 break;
               case 'recommend_reason':
                 formatted.recommendReason = item.answer;
                 break;
               case 'rehire_score':
                 formatted.rehireScore = item.answer;
+                const rehireScore = parseInt(item.answer, 10);
+                if (!isNaN(rehireScore)) {
+                  setRehireCategory(getNPSCategory(rehireScore));
+                }
                 break;
               case 'testimonial':
                 formatted.testimonial = item.answer;
@@ -177,7 +198,12 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm font-medium">Recommendation Score</p>
-                  <p className="text-2xl font-bold">{responses.recommendScore || '-'}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-bold">{responses.recommendScore || '-'}</p>
+                    {recommendCategory.category && (
+                      <Badge className={recommendCategory.color}>{recommendCategory.category}</Badge>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
@@ -187,7 +213,12 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
                 
                 <div>
                   <p className="text-sm font-medium">Rehire Score</p>
-                  <p className="text-2xl font-bold">{responses.rehireScore || '-'}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-bold">{responses.rehireScore || '-'}</p>
+                    {rehireCategory.category && (
+                      <Badge className={rehireCategory.color}>{rehireCategory.category}</Badge>
+                    )}
+                  </div>
                 </div>
                 
                 <div>

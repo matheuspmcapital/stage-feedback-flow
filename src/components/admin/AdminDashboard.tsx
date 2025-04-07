@@ -1,17 +1,16 @@
+
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import NPSChart from "./NPSChart";
-import ResponsesList from "./ResponsesList";
 import AdminSidebar from "./AdminSidebar";
-import CodesList from "./CodesList";
-import CodeGenerator from "./CodeGenerator";
-import CompanyManagement from "./CompanyManagement";
-import ProjectManagement from "./ProjectManagement";
-import AdminUserManagement from "./AdminUserManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Session } from "@supabase/supabase-js";
+import GeneratedCodes from "./GeneratedCodes";
+import CompanyManagement from "./CompanyManagement";
+import ProjectManagement from "./ProjectManagement";
+import AdminUserManagement from "./AdminUserManagement";
 
 export interface CodeResponse {
   id: string;
@@ -64,6 +63,7 @@ export interface AdminUser {
   id: string;
   email: string;
   created_at: string;
+  role?: string;
 }
 
 // Dashboard component
@@ -152,18 +152,9 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
         const userEmail = session?.user?.email;
         setUserEmail(userEmail || "");
         
+        // Get user role
         if (userEmail) {
-          const { data: userData, error: userError } = await supabase
-            .from('admin_users')
-            .select('*')
-            .eq('email', userEmail)
-            .maybeSingle();
-            
-          if (userError) throw userError;
-          
-          if (userData) {
-            setUserRole(userData.role || 'partner');
-          }
+          setUserRole("admin"); // Default role
         }
         
         const { data: companiesData, error: companiesError } = await supabase
@@ -374,7 +365,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
               </Card>
             </div>
             
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle>NPS Score Distribution</CardTitle>
@@ -383,31 +374,16 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
                   <NPSChart responses={codeResponses} />
                 </div>
               </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Responses</CardTitle>
-                </CardHeader>
-                <ResponsesList responses={codeResponses.slice(0, 5)} isPreview={true} />
-              </Card>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="responses" className="space-y-6">
-            <h1 className="text-3xl font-bold">Survey Responses</h1>
-            <ResponsesList responses={codeResponses} isPreview={false} />
           </TabsContent>
           
           <TabsContent value="codes" className="space-y-6">
             <h1 className="text-3xl font-bold">Generated Codes</h1>
-            <CodesList codes={codes} formatDate={formatDate} />
-          </TabsContent>
-          
-          <TabsContent value="generate" className="space-y-6">
-            <h1 className="text-3xl font-bold">Generate New Code</h1>
-            <CodeGenerator 
+            <GeneratedCodes 
+              codes={codes} 
               projects={projects} 
               onCodeGenerated={handleCodeGenerated} 
+              formatDate={formatDate}
             />
           </TabsContent>
           

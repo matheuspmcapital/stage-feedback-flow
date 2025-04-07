@@ -22,7 +22,7 @@ import {
 import { Code, Project } from "./AdminDashboard";
 import CodeGenerator from "./CodeGenerator";
 import CodeResponseDetails from "./CodeResponseDetails";
-import { Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowUpDown, Plus } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -50,6 +50,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [sortField, setSortField] = useState<string>("generated_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
 
   const pageSize = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -151,12 +152,6 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="pb-2">
-          <CodeGenerator projects={projects} onCodeGenerated={onCodeGenerated} />
-        </CardHeader>
-      </Card>
-
-      <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4 mb-4 justify-between">
             <div className="relative flex-1">
@@ -200,6 +195,11 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
 
               <Button variant="outline" size="icon">
                 <SlidersHorizontal className="h-4 w-4" />
+              </Button>
+              
+              <Button onClick={() => setIsGeneratorOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Generate Code
               </Button>
             </div>
           </div>
@@ -333,6 +333,21 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
             </DialogDescription>
           </DialogHeader>
           {selectedCode && <CodeResponseDetails code={selectedCode} />}
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Generate New NPS Code</DialogTitle>
+          </DialogHeader>
+          <CodeGenerator 
+            projects={projects} 
+            onCodeGenerated={(code) => {
+              onCodeGenerated(code);
+              setIsGeneratorOpen(false);
+            }} 
+          />
         </DialogContent>
       </Dialog>
     </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { 
   BarChart, 
@@ -46,6 +47,10 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
   const calculateNPS = (scores: number[]) => {
     if (scores.length === 0) return 0;
     
+    // New NPS calculation logic:
+    // Promoters: score 9-10
+    // Neutrals: score 7-8
+    // Detractors: score 0-6
     const promoters = scores.filter(score => score >= 9).length;
     const detractors = scores.filter(score => score <= 6).length;
     
@@ -71,8 +76,9 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
   const experienceRehireNPS = calculateNPS(experienceRehireScores);
 
   const getPieData = (scores: number[]) => {
+    // Using updated NPS categorization
     const promoters = scores.filter(score => score >= 9).length;
-    const passives = scores.filter(score => score > 6 && score < 9).length;
+    const passives = scores.filter(score => score >= 7 && score <= 8).length;
     const detractors = scores.filter(score => score <= 6).length;
     
     return [
