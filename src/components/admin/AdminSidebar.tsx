@@ -12,7 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Building, BarChart, Code, Users, LogOut } from "lucide-react";
+import { Building, BarChart, Code, Users, LogOut, FileText } from "lucide-react";
 import Logo from "../Logo";
 
 interface AdminSidebarProps {
@@ -41,6 +41,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       title: "Projects",
       id: "projects",
       icon: Code,
+    },
+    {
+      title: "Generated Codes",
+      id: "generatedCodes",
+      icon: FileText,
     },
     {
       title: "Admin Users",

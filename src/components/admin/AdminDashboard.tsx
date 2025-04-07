@@ -4,10 +4,10 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import NPSChart from "./NPSChart";
 import CodesList from "./CodesList";
 import ResponsesList from "./ResponsesList";
-import CodeGenerator from "./CodeGenerator";
 import CompanyManagement from "./CompanyManagement";
 import ProjectManagement from "./ProjectManagement";
 import AdminUserManagement from "./AdminUserManagement";
+import GeneratedCodes from "./GeneratedCodes";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -209,7 +209,7 @@ const AdminDashboard: React.FC = () => {
             <p className="text-sm text-muted-foreground">Total generated codes</p>
             <button 
               className="text-sm text-blue-500 mt-2" 
-              onClick={() => setActiveSection("codes")}
+              onClick={() => setActiveSection("generatedCodes")}
             >
               View all codes
             </button>
@@ -245,7 +245,7 @@ const AdminDashboard: React.FC = () => {
       <div className="mt-4 flex justify-center">
         <button 
           className="text-sm text-blue-500" 
-          onClick={() => setActiveSection("codes")}
+          onClick={() => setActiveSection("generatedCodes")}
         >
           View all {codes.length} codes
         </button>
@@ -288,8 +288,14 @@ const AdminDashboard: React.FC = () => {
             onAdminUserAdded={handleAdminUserAdded}
           />
         );
-      case "codes":
-        return <CodesList codes={codes} />;
+      case "generatedCodes":
+        return (
+          <GeneratedCodes 
+            codes={codes}
+            onCodeGenerated={handleCodeGenerated}
+            projects={projects}
+          />
+        );
       case "responses":
         return <ResponsesList responses={responses} />;
       default:
@@ -314,16 +320,9 @@ const AdminDashboard: React.FC = () => {
                 {activeSection === "companies" && "Companies"}
                 {activeSection === "projects" && "Projects"}
                 {activeSection === "adminUsers" && "Admin Users"}
-                {activeSection === "codes" && "All Generated Codes"}
+                {activeSection === "generatedCodes" && "Generated Codes"}
                 {activeSection === "responses" && "Survey Responses"}
               </h1>
-              
-              {activeSection === "codes" && (
-                <CodeGenerator 
-                  onCodeGenerated={handleCodeGenerated} 
-                  projects={projects}
-                />
-              )}
             </div>
           </header>
           
