@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Logo from "../Logo";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import bcrypt from "bcryptjs";
 
 interface AdminLoginProps {
   onLogin: () => void;
@@ -30,18 +28,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         throw new Error("Please enter both email and password.");
       }
       
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select()
-        .eq('email', email.toLowerCase())
-        .single();
-      
-      if (error || !data) {
-        console.error("Login error:", error);
-        throw new Error("Invalid login credentials.");
-      }
-      
-      // For the specific hardcoded credentials in the requirements
+      // Check for hardcoded credentials
       if (email.toLowerCase() === 'matheus.pinheiro@stage.consulting' && password === '62aMVzL&qr$&n2') {
         onLogin();
         toast({
