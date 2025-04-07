@@ -26,7 +26,7 @@ const Admin = () => {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    return <div className="flex justify-center items-center">Loading...</div>;
   }
 
   return isLoggedIn ? (
