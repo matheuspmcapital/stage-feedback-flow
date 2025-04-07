@@ -54,7 +54,7 @@ const CodeInput: React.FC<CodeInputProps> = ({ onValidCode }) => {
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
               placeholder="ABC123"
-              className="text-center text-xl py-6 bg-white/50 dark:bg-zinc-800/50 border-white/30 dark:border-zinc-700/50"
+              className="text-center text-xl py-6 bg-white/50 dark:bg-zinc-800/50 border border-[#ececec]"
               maxLength={10}
             />
             <Button
