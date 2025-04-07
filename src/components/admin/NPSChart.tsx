@@ -44,7 +44,7 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
     return Array.from(types);
   }, [responses]);
 
-  const processResponses = (metric: string) => {
+  const processRecommendResponses = () => {
     const filteredResponses = filter === "all" 
       ? responses 
       : responses.filter(r => r.service_type === filter);
@@ -55,7 +55,7 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
     let total = 0;
 
     filteredResponses.forEach(response => {
-      const metricAnswer = response.answers?.find(a => a.question_id === metric);
+      const metricAnswer = response.answers?.find(a => a.question_id === 'recommend_score');
       
       if (metricAnswer) {
         const score = parseInt(metricAnswer.answer);
@@ -106,8 +106,70 @@ const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
     };
   };
 
-  const recommendData = processResponses('recommend_score');
-  const rehireData = processResponses('rehire_score');
+  const processRehireResponses = () => {
+    const filteredResponses = filter === "all" 
+      ? responses 
+      : responses.filter(r => r.service_type === filter);
+
+    let promoters = 0;
+    let neutrals = 0;
+    let detractors = 0;
+    let total = 0;
+
+    filteredResponses.forEach(response => {
+      const metricAnswer = response.answers?.find(a => a.question_id === 'rehire_score');
+      
+      if (metricAnswer) {
+        const score = parseInt(metricAnswer.answer);
+        if (!isNaN(score)) {
+          const category = getNPSCategory(score);
+          
+          if (category === 'promoter') promoters++;
+          else if (category === 'neutral') neutrals++;
+          else if (category === 'detractor') detractors++;
+          
+          total++;
+        }
+      }
+    });
+
+    const npsScore = total > 0 
+      ? Math.round((promoters - detractors) / total * 100) 
+      : 0;
+
+    const chartData: NPSData[] = [
+      { 
+        name: 'Promoters (9-10)', 
+        value: total > 0 ? Math.round((promoters / total) * 100) : 0, 
+        fill: '#10b981',
+        label: 'Promoters'
+      },
+      { 
+        name: 'Neutral (7-8)', 
+        value: total > 0 ? Math.round((neutrals / total) * 100) : 0, 
+        fill: '#f59e0b',
+        label: 'Neutrals'
+      },
+      { 
+        name: 'Detractors (0-6)', 
+        value: total > 0 ? Math.round((detractors / total) * 100) : 0, 
+        fill: '#ef4444',
+        label: 'Detractors'
+      }
+    ];
+
+    return {
+      chartData,
+      npsScore,
+      total,
+      promoters,
+      neutrals,
+      detractors
+    };
+  };
+
+  const recommendData = processRecommendResponses();
+  const rehireData = processRehireResponses();
 
   const compareData = useMemo(() => {
     if (serviceTypes.length <= 1) return null;

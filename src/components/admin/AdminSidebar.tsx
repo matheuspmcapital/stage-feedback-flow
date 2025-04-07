@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
 } from "@/components/ui/sidebar";
-import { BarChart, Building, Code, LogOut } from "lucide-react";
+import { BarChart, Building, Code, Database, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Logo from "../Logo";
 
@@ -52,6 +52,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       title: "Projects",
       id: "projects",
       icon: Code,
+    },
+    {
+      title: "Data",
+      id: "data",
+      icon: Database,
     }
   ];
 
