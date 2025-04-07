@@ -29,14 +29,14 @@ enum Step {
 const NPSFlow: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<Step>(Step.Welcome);
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
-  const { npsData, code, codeValidated, setCode, setCodeValidated } = useNPS();
+  const { npsData, code, codeValidated, submitResponses } = useNPS();
   const { toast } = useToast();
   const [isCheckingCode, setIsCheckingCode] = useState(true);
   
   // Check if code has already been completed
   useEffect(() => {
     const checkCodeStatus = async () => {
-      if (!npsData.code) {
+      if (!code) {
         setIsCheckingCode(false);
         return;
       }
@@ -45,7 +45,7 @@ const NPSFlow: React.FC = () => {
         const { data, error } = await supabase
           .from('survey_codes')
           .select('completed_at')
-          .eq('code', npsData.code)
+          .eq('code', code)
           .single();
         
         if (error) {
@@ -59,7 +59,7 @@ const NPSFlow: React.FC = () => {
           await supabase
             .from('survey_codes')
             .update({ started_at: now })
-            .eq('code', npsData.code);
+            .eq('code', code);
         }
       } catch (err) {
         console.error("Error checking code status:", err);
@@ -69,7 +69,7 @@ const NPSFlow: React.FC = () => {
     };
     
     checkCodeStatus();
-  }, [codeValidated, npsData.code]);
+  }, [codeValidated, code]);
   
   const goToNext = () => {
     setDirection("forward");
@@ -81,65 +81,17 @@ const NPSFlow: React.FC = () => {
     setCurrentStep((prev) => prev - 1 as Step);
   };
 
-  const submitSurvey = async () => {
-    // In a real app, you would send the data to an API
-    console.log("Submitting survey:", npsData);
-    
+  const handleSubmit = async () => {
     try {
-      // Get the survey_code_id from the code
-      const { data: codeData, error: codeError } = await supabase
-        .from('survey_codes')
-        .select('id')
-        .eq('code', npsData.code)
-        .single();
+      const success = await submitResponses();
       
-      if (codeError) throw codeError;
-      
-      if (!codeData) {
-        throw new Error("Survey code not found");
+      if (success) {
+        toast({
+          title: "Survey submitted",
+          description: "Thank you for your feedback!"
+        });
+        goToNext();
       }
-      
-      // Insert survey answers
-      await supabase.from('survey_answers').insert([
-        {
-          survey_code_id: codeData.id,
-          question_id: 'recommend_score',
-          answer: npsData.recommendScore?.toString() || ''
-        },
-        {
-          survey_code_id: codeData.id,
-          question_id: 'recommend_reason',
-          answer: npsData.recommendReason || ''
-        },
-        {
-          survey_code_id: codeData.id,
-          question_id: 'rehire_score',
-          answer: npsData.rehireScore?.toString() || ''
-        },
-        {
-          survey_code_id: codeData.id,
-          question_id: 'testimonial',
-          answer: npsData.testimonial || ''
-        },
-        {
-          survey_code_id: codeData.id,
-          question_id: 'can_publish',
-          answer: npsData.canPublish ? 'true' : 'false'
-        }
-      ]);
-      
-      // Update survey code completion
-      await supabase
-        .from('survey_codes')
-        .update({ completed_at: new Date().toISOString() })
-        .eq('code', npsData.code);
-      
-      // Show toast
-      toast({
-        title: "Survey submitted",
-        description: "Thank you for your feedback!"
-      });
-      
     } catch (error) {
       console.error("Error submitting survey:", error);
       toast({
@@ -148,9 +100,6 @@ const NPSFlow: React.FC = () => {
         description: "There was a problem submitting your survey. Please try again."
       });
     }
-    
-    // Go to thank you screen
-    goToNext();
   };
 
   if (isCheckingCode) {
@@ -187,7 +136,7 @@ const NPSFlow: React.FC = () => {
         )}
         
         {currentStep === Step.Summary && (
-          <SummaryScreen key="summary" onNext={goToNext} onPrev={goToPrev} onSubmit={submitSurvey} />
+          <SummaryScreen key="summary" onNext={goToNext} onPrev={goToPrev} onSubmit={handleSubmit} />
         )}
         
         {currentStep === Step.ThankYou && (

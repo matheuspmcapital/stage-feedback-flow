@@ -1,297 +1,150 @@
 
-import React, { useState } from "react";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-  LineChart,
-  Line
-} from "recharts";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CodeResponse } from "./AdminDashboard";
+import React, { useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend, Cell } from 'recharts';
+import { CodeResponse } from './AdminDashboard';
+import { useNPS } from '@/contexts/NPSContext';
 
 interface NPSChartProps {
   responses: CodeResponse[];
 }
 
+interface NPSData {
+  name: string;
+  value: number;
+  fill: string;
+  label?: string;
+}
+
 const NPSChart: React.FC<NPSChartProps> = ({ responses }) => {
-  const [activeTab, setActiveTab] = useState("overall");
-  
-  const transformData = () => {
-    return responses.map(response => {
-      const npsAnswer = response.answers.find(a => a.question_id === 'nps-score' || a.question_id === 'recommend_score');
-      const rehireAnswer = response.answers.find(a => a.question_id === 'rehire_score');
+  const { getNPSCategory } = useNPS();
+
+  const processResponses = useMemo(() => {
+    let promoters = 0;
+    let neutrals = 0;
+    let detractors = 0;
+    let total = 0;
+
+    // Process all responses to count NPS categories
+    responses.forEach(response => {
+      const recommendScoreAnswer = response.answers?.find(a => a.question_id === 'recommend_score');
       
-      return {
-        userName: response.name,
-        recommendScore: npsAnswer ? parseInt(npsAnswer.answer, 10) : 0,
-        rehireScore: rehireAnswer ? parseInt(rehireAnswer.answer, 10) : 0,
-        serviceType: response.service_type
-      };
+      if (recommendScoreAnswer) {
+        const score = parseInt(recommendScoreAnswer.answer);
+        if (!isNaN(score)) {
+          const category = getNPSCategory(score);
+          
+          if (category === 'promoter') promoters++;
+          else if (category === 'neutral') neutrals++;
+          else if (category === 'detractor') detractors++;
+          
+          total++;
+        }
+      }
     });
-  };
-  
-  const chartData = transformData();
-  
-  const strategyData = chartData.filter(item => item.serviceType === 'strategy');
-  const experienceData = chartData.filter(item => item.serviceType === 'experience');
-  
-  const calculateNPS = (scores: number[]) => {
-    if (scores.length === 0) return 0;
-    
-    // New NPS calculation logic:
-    // Promoters: score 9-10
-    // Neutrals: score 7-8
-    // Detractors: score 0-6
-    const promoters = scores.filter(score => score >= 9).length;
-    const detractors = scores.filter(score => score <= 6).length;
-    
-    return Math.round((promoters - detractors) / scores.length * 100);
-  };
-  
-  const recommendScores = chartData.map(item => item.recommendScore).filter(Boolean) as number[];
-  const rehireScores = chartData.map(item => item.rehireScore).filter(Boolean) as number[];
-  
-  const strategyRecommendScores = strategyData.map(item => item.recommendScore).filter(Boolean) as number[];
-  const strategyRehireScores = strategyData.map(item => item.rehireScore).filter(Boolean) as number[];
-  
-  const experienceRecommendScores = experienceData.map(item => item.recommendScore).filter(Boolean) as number[];
-  const experienceRehireScores = experienceData.map(item => item.rehireScore).filter(Boolean) as number[];
-  
-  const overallNPS = calculateNPS(recommendScores);
-  const overallRehireNPS = calculateNPS(rehireScores);
-  
-  const strategyNPS = calculateNPS(strategyRecommendScores);
-  const strategyRehireNPS = calculateNPS(strategyRehireScores);
-  
-  const experienceNPS = calculateNPS(experienceRecommendScores);
-  const experienceRehireNPS = calculateNPS(experienceRehireScores);
 
-  const getPieData = (scores: number[]) => {
-    // Using updated NPS categorization
-    const promoters = scores.filter(score => score >= 9).length;
-    const passives = scores.filter(score => score >= 7 && score <= 8).length;
-    const detractors = scores.filter(score => score <= 6).length;
-    
-    return [
-      { name: 'Promoters', value: promoters },
-      { name: 'Passives', value: passives },
-      { name: 'Detractors', value: detractors },
-    ].filter(segment => segment.value > 0);
-  };
-  
-  const comparisonData = [
-    { name: 'Strategy', recommend: strategyNPS, rehire: strategyRehireNPS },
-    { name: 'Experience', recommend: experienceNPS, rehire: experienceRehireNPS },
-    { name: 'Overall', recommend: overallNPS, rehire: overallRehireNPS }
-  ];
-  
-  const recommendPieData = getPieData(recommendScores);
-  const rehirePieData = getPieData(rehireScores);
-  
-  const strategyRecommendPieData = getPieData(strategyRecommendScores);
-  const strategyRehirePieData = getPieData(strategyRehireScores);
-  
-  const experienceRecommendPieData = getPieData(experienceRecommendScores);
-  const experienceRehirePieData = getPieData(experienceRehireScores);
-  
-  const COLORS = ['#4ade80', '#facc15', '#f87171'];
+    // Calculate NPS score
+    const npsScore = total > 0 
+      ? Math.round((promoters - detractors) / total * 100) 
+      : 0;
 
-  const renderPieCharts = (
-    recommendPieData: { name: string; value: number }[],
-    rehirePieData: { name: string; value: number }[],
-    npsScore: number,
-    rehireNpsScore: number
-  ) => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-base font-medium mb-2">Recommendation Score</h3>
-          <div className="flex items-center space-x-2 mb-1">
-            <span className="text-3xl font-bold">{npsScore}</span>
-            <span className="text-sm text-muted-foreground">NPS Score</span>
-          </div>
-          <div className="h-64">
-            {recommendPieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={recommendPieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {recommendPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                No data available
+    // Prepare data for the chart
+    const chartData: NPSData[] = [
+      { 
+        name: 'Promoters (9-10)', 
+        value: total > 0 ? Math.round((promoters / total) * 100) : 0, 
+        fill: '#10b981',
+        label: 'Promoters'
+      },
+      { 
+        name: 'Neutral (7-8)', 
+        value: total > 0 ? Math.round((neutrals / total) * 100) : 0, 
+        fill: '#f59e0b',
+        label: 'Neutrals'
+      },
+      { 
+        name: 'Detractors (0-6)', 
+        value: total > 0 ? Math.round((detractors / total) * 100) : 0, 
+        fill: '#ef4444',
+        label: 'Detractors'
+      }
+    ];
+
+    return {
+      chartData,
+      npsScore,
+      total,
+      promoters,
+      neutrals,
+      detractors
+    };
+  }, [responses, getNPSCategory]);
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>NPS Score</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {processResponses.npsScore}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Based on {processResponses.total} responses
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>Response Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between text-sm">
+              <div>
+                <div className="text-lg font-semibold text-green-500">{processResponses.promoters}</div>
+                <div>Promoters</div>
               </div>
-            )}
-          </div>
-        </div>
-        
-        <div>
-          <h3 className="text-base font-medium mb-2">Rehire Score</h3>
-          <div className="flex items-center space-x-2 mb-1">
-            <span className="text-3xl font-bold">{rehireNpsScore}</span>
-            <span className="text-sm text-muted-foreground">NPS Score</span>
-          </div>
-          <div className="h-64">
-            {rehirePieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={rehirePieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {rehirePieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                No data available
+              <div>
+                <div className="text-lg font-semibold text-amber-500">{processResponses.neutrals}</div>
+                <div>Neutrals</div>
               </div>
-            )}
-          </div>
-        </div>
+              <div>
+                <div className="text-lg font-semibold text-red-500">{processResponses.detractors}</div>
+                <div>Detractors</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
-  );
-  
-  const renderComparisonCharts = () => (
-    <div className="space-y-6">
-      <div className="h-80">
+
+      <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={comparisonData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+            data={processResponses.chartData}
+            margin={{
+              top: 20,
+              right: 30,
+              left: 20,
+              bottom: 5,
+            }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
-            <YAxis domain={[-100, 100]} />
-            <Tooltip />
+            <YAxis unit="%" />
+            <Tooltip 
+              formatter={(value) => [`${value}%`, 'Percentage']}
+            />
             <Legend />
-            <Bar dataKey="recommend" name="Recommend NPS" fill="#3b82f6" />
-            <Bar dataKey="rehire" name="Rehire NPS" fill="#8b5cf6" />
+            <Bar dataKey="value" name="Percentage">
+              {processResponses.chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
-      
-      <div className="h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={comparisonData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis domain={[-100, 100]} />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="recommend" name="Recommend NPS" stroke="#3b82f6" activeDot={{ r: 8 }} />
-            <Line type="monotone" dataKey="rehire" name="Rehire NPS" stroke="#8b5cf6" activeDot={{ r: 8 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-  
-  return (
-    <div>
-      <Tabs 
-        defaultValue="overall" 
-        value={activeTab} 
-        onValueChange={setActiveTab} 
-        className="w-full"
-      >
-        <TabsList>
-          <TabsTrigger value="overall">Overall</TabsTrigger>
-          <TabsTrigger value="strategy">Strategy</TabsTrigger>
-          <TabsTrigger value="experience">Experience</TabsTrigger>
-          <TabsTrigger value="comparison">Comparison</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="overall" className="mt-4">
-          {renderPieCharts(recommendPieData, rehirePieData, overallNPS, overallRehireNPS)}
-        </TabsContent>
-        
-        <TabsContent value="strategy" className="mt-4">
-          {renderPieCharts(strategyRecommendPieData, strategyRehirePieData, strategyNPS, strategyRehireNPS)}
-        </TabsContent>
-        
-        <TabsContent value="experience" className="mt-4">
-          {renderPieCharts(experienceRecommendPieData, experienceRehirePieData, experienceNPS, experienceRehireNPS)}
-        </TabsContent>
-        
-        <TabsContent value="comparison" className="mt-4">
-          {renderComparisonCharts()}
-        </TabsContent>
-      </Tabs>
-      
-      {activeTab !== 'comparison' && (
-        <div className="mt-8">
-          <h3 className="text-base font-medium mb-2">Scores by Client</h3>
-          <div className="h-80">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={activeTab === 'strategy' ? strategyData : 
-                         activeTab === 'experience' ? experienceData : chartData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="userName" 
-                    angle={-45} 
-                    textAnchor="end"
-                    height={70}
-                    interval={0}
-                  />
-                  <YAxis domain={[0, 10]} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="recommendScore" name="Recommend Score" fill="#3b82f6" />
-                  <Bar dataKey="rehireScore" name="Rehire Score" fill="#8b5cf6" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                No data available
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

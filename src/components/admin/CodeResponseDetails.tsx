@@ -1,245 +1,193 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Code } from "./AdminDashboard";
-import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Code } from "./AdminDashboard";
+import { useNPS } from "@/contexts/NPSContext";
 
 interface CodeResponseDetailsProps {
   code: Code;
 }
 
-interface SurveyResponse {
-  question_id: string;
-  answer: string;
-}
-
-interface FormattedResponse {
-  recommendScore?: string;
-  recommendReason?: string;
-  rehireScore?: string; 
-  testimonial?: string;
-  canPublish?: boolean;
-}
-
-// Helper function to categorize NPS scores
-const getNPSCategory = (score: number): { category: string; color: string } => {
-  if (score >= 9) {
-    return { category: "Promoter", color: "bg-green-500" };
-  } else if (score >= 7) {
-    return { category: "Neutral", color: "bg-yellow-500" };
-  } else {
-    return { category: "Detractor", color: "bg-red-500" };
-  }
-};
-
 const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
-  const [responses, setResponses] = useState<FormattedResponse>({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [timeSpent, setTimeSpent] = useState<string>('-');
-  const [recommendCategory, setRecommendCategory] = useState<{ category: string; color: string }>({ category: "", color: "" });
-  const [rehireCategory, setRehireCategory] = useState<{ category: string; color: string }>({ category: "", color: "" });
+  const { getNPSCategory } = useNPS();
+  const [answers, setAnswers] = React.useState<Array<{ question_id: string; answer: string }>>([]);
 
-  // Format date to dd/mm/yy HH:MM:SS
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "--";
-    
-    const date = new Date(dateString);
-    
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear().toString().slice(2);
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    const seconds = date.getSeconds().toString().padStart(2, '0');
-    
-    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-  };
-
-  useEffect(() => {
-    const fetchResponses = async () => {
-      setIsLoading(true);
+  React.useEffect(() => {
+    const fetchAnswers = async () => {
       try {
         const { data, error } = await supabase
-          .from('survey_answers')
-          .select('*')
-          .eq('survey_code_id', code.id);
-        
-        if (error) throw error;
-        
-        // Format the responses
-        if (data && data.length > 0) {
-          const formatted: FormattedResponse = {};
-          
-          data.forEach((item: SurveyResponse) => {
-            switch (item.question_id) {
-              case 'recommend_score':
-                formatted.recommendScore = item.answer;
-                const recScore = parseInt(item.answer, 10);
-                if (!isNaN(recScore)) {
-                  setRecommendCategory(getNPSCategory(recScore));
-                }
-                break;
-              case 'recommend_reason':
-                formatted.recommendReason = item.answer;
-                break;
-              case 'rehire_score':
-                formatted.rehireScore = item.answer;
-                const rehireScore = parseInt(item.answer, 10);
-                if (!isNaN(rehireScore)) {
-                  setRehireCategory(getNPSCategory(rehireScore));
-                }
-                break;
-              case 'testimonial':
-                formatted.testimonial = item.answer;
-                break;
-              case 'can_publish':
-                formatted.canPublish = item.answer.toLowerCase() === 'true';
-                break;
-            }
-          });
-          
-          setResponses(formatted);
-        }
+          .from("survey_answers")
+          .select("*")
+          .eq("survey_code_id", code.id);
 
-        // Calculate time spent
-        if (code.started_at && code.completed_at) {
-          const start = new Date(code.started_at).getTime();
-          const end = new Date(code.completed_at).getTime();
-          const diffInSeconds = Math.floor((end - start) / 1000);
-          
-          const minutes = Math.floor(diffInSeconds / 60);
-          const seconds = diffInSeconds % 60;
-          
-          setTimeSpent(`${minutes}m ${seconds}s`);
-        }
+        if (error) throw error;
+        setAnswers(data || []);
       } catch (error) {
-        console.error("Error fetching responses:", error);
-      } finally {
-        setIsLoading(false);
+        console.error("Error fetching answers:", error);
       }
     };
 
-    fetchResponses();
-  }, [code]);
+    fetchAnswers();
+  }, [code.id]);
+
+  const getAnswer = (questionId: string) => {
+    const answer = answers.find(a => a.question_id === questionId);
+    return answer ? answer.answer : "";
+  };
+
+  const recommendScore = parseInt(getAnswer("recommend_score"));
+  const rehireScore = parseInt(getAnswer("rehire_score"));
+  const recommendReason = getAnswer("recommend_reason");
+  const testimonial = getAnswer("testimonial");
+  const canPublish = getAnswer("can_publish") === "true";
+
+  // Calculate NPS category
+  const npsCategory = !isNaN(recommendScore) ? getNPSCategory(recommendScore) : null;
+  const npsCategoryText = npsCategory === "promoter" ? "Promoter" : 
+                          npsCategory === "neutral" ? "Neutral" : 
+                          npsCategory === "detractor" ? "Detractor" : "Unknown";
+  const npsCategoryColor = npsCategory === "promoter" ? "bg-green-500" : 
+                           npsCategory === "neutral" ? "bg-amber-500" : 
+                           npsCategory === "detractor" ? "bg-red-500" : "bg-gray-500";
 
   return (
-    <ScrollArea className="h-[calc(100vh-180px)]">
-      <div className="space-y-4 py-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div>
-            <p className="text-sm font-medium">Name</p>
-            <p>{code.name}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium">Email</p>
-            <p>{code.email}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium">Project</p>
-            <p>{code.project_name || '-'}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium">Company</p>
-            <p>{code.company_name || '-'}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium">Service Type</p>
-            <p>
-              <Badge variant={code.service_type === "experience" ? "default" : "outline"}>
-                {code.service_type}
-              </Badge>
-            </p>
-          </div>
-          <div>
-            <p className="text-sm font-medium">Status</p>
-            <p>
-              {code.completed_at ? (
-                <Badge className="bg-green-500">Completed</Badge>
-              ) : code.started_at ? (
-                <Badge className="bg-orange-400">Started</Badge>
-              ) : (
-                <Badge variant="outline">Pending</Badge>
-              )}
-            </p>
-          </div>
-        </div>
-
-        <Separator />
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm font-medium">Generated</p>
-            <p>{formatDate(code.generated_at)}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium">Started</p>
-            <p>{formatDate(code.started_at)}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium">Completed</p>
-            <p>{formatDate(code.completed_at)}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium">Time Spent</p>
-            <p>{timeSpent}</p>
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="py-8 text-center">Loading responses...</div>
-        ) : Object.keys(responses).length > 0 ? (
-          <>
-            <Separator />
-            <div className="space-y-4 overflow-y-auto">
-              <h3 className="text-lg font-semibold">Survey Responses</h3>
-              
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium">Recommendation Score</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-2xl font-bold">{responses.recommendScore || '-'}</p>
-                    {recommendCategory.category && (
-                      <Badge className={recommendCategory.color}>{recommendCategory.category}</Badge>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-medium">Recommendation Reason</p>
-                  <p className="p-2 bg-muted rounded-md">{responses.recommendReason || '-'}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-medium">Rehire Score</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-2xl font-bold">{responses.rehireScore || '-'}</p>
-                    {rehireCategory.category && (
-                      <Badge className={rehireCategory.color}>{rehireCategory.category}</Badge>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-medium">Testimonial</p>
-                  <p className="p-2 bg-muted rounded-md">{responses.testimonial || '-'}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-medium">Can Publish</p>
-                  <p>{responses.canPublish ? 'Yes' : 'No'}</p>
-                </div>
-              </div>
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Respondent Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Name</p>
+              <p className="font-medium">{code.name}</p>
             </div>
-          </>
-        ) : (
-          <div className="py-8 text-center text-muted-foreground">
-            No responses received yet
-          </div>
-        )}
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Email</p>
+              <p>{code.email}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Project</p>
+              <p>{code.project_name}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Company</p>
+              <p>{code.company_name}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Service Type</p>
+              <Badge variant={code.service_type === "experience" ? "default" : "outline"}>{code.service_type}</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Survey Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {recommendScore > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-medium text-muted-foreground">NPS Category</p>
+                <Badge className={`${npsCategoryColor} mt-1`}>{npsCategoryText}</Badge>
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Code Generated</p>
+              <p>{new Date(code.generated_at).toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Started</p>
+              <p>{code.started_at ? new Date(code.started_at).toLocaleString() : "Not started"}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Completed</p>
+              <p>{code.completed_at ? new Date(code.completed_at).toLocaleString() : "Not completed"}</p>
+            </div>
+            {code.started_at && code.completed_at && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Time Spent</p>
+                <p>
+                  {(() => {
+                    const startTime = new Date(code.started_at).getTime();
+                    const endTime = new Date(code.completed_at).getTime();
+                    const diffInSeconds = Math.floor((endTime - startTime) / 1000);
+                    const minutes = Math.floor(diffInSeconds / 60);
+                    const seconds = diffInSeconds % 60;
+                    return `${minutes}m ${seconds}s`;
+                  })()}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-    </ScrollArea>
+
+      {answers.length > 0 ? (
+        <Tabs defaultValue="summary" className="w-full">
+          <TabsList>
+            <TabsTrigger value="summary">Summary</TabsTrigger>
+            <TabsTrigger value="details">Details</TabsTrigger>
+          </TabsList>
+          <TabsContent value="summary">
+            <Card>
+              <CardHeader>
+                <CardTitle>Survey Response Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Recommendation Score</p>
+                    <div className="text-3xl font-bold mt-1">{!isNaN(recommendScore) ? recommendScore : "-"}</div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Rehire Score</p>
+                    <div className="text-3xl font-bold mt-1">{!isNaN(rehireScore) ? rehireScore : "-"}</div>
+                  </div>
+                </div>
+                {recommendReason && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Recommendation Reason</p>
+                    <div className="p-3 bg-muted rounded-md mt-1 text-sm">{recommendReason}</div>
+                  </div>
+                )}
+                {testimonial && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Testimonial</p>
+                    <div className="p-3 bg-muted rounded-md mt-1 text-sm">{testimonial}</div>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Can Publish Testimonial</p>
+                  <p className="mt-1">{canPublish ? "Yes" : "No"}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="details">
+            <Card>
+              <CardHeader>
+                <CardTitle>Raw Response Data</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[300px]">
+                  <pre className="text-xs">{JSON.stringify(answers, null, 2)}</pre>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            No survey responses recorded yet.
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 

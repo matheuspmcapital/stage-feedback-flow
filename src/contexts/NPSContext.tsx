@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -31,6 +32,7 @@ interface NPSContextType {
   setCanPublish: (canPublish: boolean) => void;
   submitResponses: () => Promise<boolean>;
   recordStep: (questionId: string, answer: any) => Promise<void>;
+  getNPSCategory: (score: number) => "promoter" | "neutral" | "detractor";
 }
 
 const initialData: NPSData = {
@@ -55,6 +57,13 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
   React.useEffect(() => {
     setNpsData(prev => ({ ...prev, userName, code }));
   }, [userName, code]);
+
+  // NPS category calculator
+  const getNPSCategory = (score: number): "promoter" | "neutral" | "detractor" => {
+    if (score >= 9) return "promoter";
+    if (score >= 7) return "neutral";
+    return "detractor";
+  };
 
   const recordStep = async (questionId: string, answer: any) => {
     try {
@@ -151,7 +160,8 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         setTestimonial,
         setCanPublish,
         submitResponses,
-        recordStep
+        recordStep,
+        getNPSCategory
       }}
     >
       {children}
