@@ -22,7 +22,7 @@ interface AdminSidebarProps {
   onSectionChange: (section: string) => void;
   onLogout: () => void;
   userEmail: string;
-  userRole: string; // Added userRole prop to interface
+  userRole: string;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -30,7 +30,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onSectionChange,
   onLogout,
   userEmail,
-  userRole, // Added to props destructuring
+  userRole,
 }) => {
   const menuItems = [
     {
@@ -112,6 +112,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
               </Avatar>
               <div className="overflow-hidden">
                 <p className="text-sm font-medium truncate max-w-[140px]">{userEmail}</p>
+                <p className="text-xs text-muted-foreground truncate">{userRole}</p>
               </div>
             </div>
             <SidebarMenuButton onClick={onLogout} variant="outline" className="w-full">

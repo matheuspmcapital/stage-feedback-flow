@@ -165,28 +165,28 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
             </div>
             <div className="flex gap-2">
               <Select
-                value={filterServiceType || ""}
-                onValueChange={(value) => setFilterServiceType(value || null)}
+                value={filterServiceType || "all"}
+                onValueChange={(value) => setFilterServiceType(value === "all" ? null : value)}
               >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Service Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="strategy">Strategy</SelectItem>
                   <SelectItem value="experience">Experience</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select
-                value={filterStatus || ""}
-                onValueChange={(value) => setFilterStatus(value || null)}
+                value={filterStatus || "all"}
+                onValueChange={(value) => setFilterStatus(value === "all" ? null : value)}
               >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>

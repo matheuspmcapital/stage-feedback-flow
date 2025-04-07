@@ -165,11 +165,15 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
             <SelectValue placeholder="Select a project" />
           </SelectTrigger>
           <SelectContent>
-            {projects.map(project => (
-              <SelectItem key={project.id} value={project.id}>
-                {project.name} ({project.company_name})
-              </SelectItem>
-            ))}
+            {projects.length > 0 ? (
+              projects.map(project => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name} ({project.company_name})
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="no-projects">No projects available</SelectItem>
+            )}
           </SelectContent>
         </Select>
       </div>
