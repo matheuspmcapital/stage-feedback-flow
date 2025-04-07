@@ -35,7 +35,6 @@ const AdminLogin: React.FC = () => {
         throw new Error(error.message || "Invalid login credentials.");
       }
       
-      // Skip admin check for now - we'll create the user separately
       toast({
         title: "Login Successful",
         description: "Welcome to the admin dashboard.",

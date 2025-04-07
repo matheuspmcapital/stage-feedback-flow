@@ -4,12 +4,13 @@ import AdminLogin from "../components/admin/AdminLogin";
 import AdminDashboard from "../components/admin/AdminDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Session } from "@supabase/supabase-js";
 
 const Admin = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<Session | null>(null);
   
   // Check if session exists in Supabase Auth
   useEffect(() => {
@@ -19,6 +20,27 @@ const Admin = () => {
         if (event === 'SIGNED_IN' && session) {
           setIsLoggedIn(true);
           setSession(session);
+          
+          // Check if this user exists in admin_users
+          setTimeout(async () => {
+            const { data, error: userError } = await supabase
+              .from('admin_users')
+              .select('*')
+              .eq('email', session.user.email)
+              .maybeSingle();
+
+            if (userError || !data) {
+              // If not in admin_users table, sign out
+              await supabase.auth.signOut();
+              setIsLoggedIn(false);
+              setSession(null);
+              toast({
+                variant: "destructive",
+                title: "Access Denied",
+                description: "You don't have admin access. Please contact support."
+              });
+            }
+          }, 0);
         } else if (event === 'SIGNED_OUT') {
           setIsLoggedIn(false);
           setSession(null);
@@ -79,7 +101,7 @@ const Admin = () => {
   }
 
   return isLoggedIn ? (
-    <AdminDashboard />
+    <AdminDashboard session={session} />
   ) : (
     <AdminLogin />
   );

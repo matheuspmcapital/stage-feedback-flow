@@ -33,7 +33,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminUser } from "./AdminDashboard";
 import { Plus, User } from "lucide-react";
-import bcrypt from "bcryptjs";
 
 interface AdminUserManagementProps {
   adminUsers: AdminUser[];
@@ -113,22 +112,31 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
       setIsSubmitting(true);
       
       // First create user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: email.toLowerCase(),
         password: password,
-        options: {
-          data: {
-            role: role
-          }
+        email_confirm: true,
+        user_metadata: {
+          role: role
         }
       });
       
-      if (authError) throw authError;
+      if (authError) {
+        // If admin API fails, try regular signup
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: email.toLowerCase(),
+          password: password,
+          options: {
+            data: {
+              role: role
+            }
+          }
+        });
+        
+        if (signUpError) throw signUpError;
+      }
       
-      // Hash the password before storing in admin_users table
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
-      // Check if the email already exists
+      // Check if the email already exists in admin_users
       const { data: existingUsers, error: checkError } = await supabase
         .from('admin_users')
         .select('id')
@@ -140,12 +148,12 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({
         throw new Error("An admin user with this email already exists.");
       }
       
-      // Insert admin user into Supabase
+      // Insert admin user into Supabase - store the password as a placeholder since auth handles it
       const { data, error } = await supabase
         .from('admin_users')
         .insert({ 
           email: email.toLowerCase(),
-          password: hashedPassword,
+          password: "MANAGED_BY_SUPABASE_AUTH", // No need to store actual password
           role: role
         })
         .select()

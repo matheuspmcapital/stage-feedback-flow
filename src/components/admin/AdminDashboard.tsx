@@ -1,24 +1,42 @@
+
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import NPSChart from "./NPSChart";
-import CodesList from "./CodesList";
 import ResponsesList from "./ResponsesList";
+import AdminSidebar from "./AdminSidebar";
+import CodesList from "./CodesList";
+import CodeGenerator from "./CodeGenerator";
 import CompanyManagement from "./CompanyManagement";
 import ProjectManagement from "./ProjectManagement";
 import AdminUserManagement from "./AdminUserManagement";
-import GeneratedCodes from "./GeneratedCodes";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import AdminSidebar from "./AdminSidebar";
-import { Card, CardContent } from "@/components/ui/card";
-import { Clock, TrendingUp, Users, Code as CodeIcon } from "lucide-react";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Session } from "@supabase/supabase-js";
 
-// Interfaces for our data types
+export interface CodeResponse {
+  id: string;
+  email: string;
+  name: string;
+  project_name: string;
+  code: string;
+  company_name: string;
+  completed: boolean;
+  started_at: string;
+  completed_at: string;
+  service_type: string;
+  score?: number;
+  answers: {
+    question_id: string;
+    answer: string;
+  }[];
+}
+
 export interface Company {
   id: string;
   name: string;
   cnpj: string;
+  created_at: string;
 }
 
 export interface Project {
@@ -26,48 +44,45 @@ export interface Project {
   name: string;
   company_id: string;
   company_name?: string;
+  created_at: string;
 }
 
 export interface Code {
   id: string;
   code: string;
-  name: string;
   email: string;
+  name: string;
   project_id: string;
   project_name?: string;
   company_name?: string;
   service_type: string;
   generated_at: string;
-  started_at?: string;
-  completed_at?: string;
-}
-
-export interface Response {
-  userName: string;
-  code: string;
-  recommendScore: number;
-  recommendReason: string;
-  rehireScore: number;
-  testimonial: string;
-  canPublish: boolean;
-  submittedAt: string;
-  serviceType: string;
+  started_at: string | null;
+  completed_at: string | null;
 }
 
 export interface AdminUser {
   id: string;
   email: string;
-  role: string;
   created_at: string;
+  role?: string;
 }
 
-const AdminDashboard: React.FC = () => {
-  const [activeSection, setActiveSection] = useState("dashboard");
+// Dashboard component
+const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
+  const [activeSection, setActiveSection] = useState<string>("dashboard");
+  const [codeResponses, setCodeResponses] = useState<CodeResponse[]>([]);
   const [codes, setCodes] = useState<Code[]>([]);
-  const [responses, setResponses] = useState<Response[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    completed: 0,
+    responses: 0,
+    participation: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [averageResponseTime, setAverageResponseTime] = useState<string>("--");
   const [userRole, setUserRole] = useState<string>("partner");
@@ -76,57 +91,64 @@ const AdminDashboard: React.FC = () => {
   
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Error signing out:", error);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error signing out",
+        description: error.message || "An error occurred while signing out."
+      });
     }
   };
   
-  // Format date to dd/mm/yy HH:MM:SS
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "--";
+  // Calculate stats
+  const calculateStats = (codes: Code[]) => {
+    const total = codes.length;
+    const started = codes.filter(code => code.started_at).length;
+    const completed = codes.filter(code => code.completed_at).length;
+    const participation = total > 0 ? Math.round((started / total) * 100) : 0;
     
-    const date = new Date(dateString);
-    
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear().toString().slice(2);
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    const seconds = date.getSeconds().toString().padStart(2, '0');
-    
-    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    setStats({
+      total,
+      pending: total - completed,
+      completed,
+      responses: started,
+      participation,
+    });
   };
   
-  // Calculate average response time
   const calculateAverageResponseTime = (codes: Code[]) => {
-    const completedCodes = codes.filter(code => code.started_at && code.completed_at);
+    const completedCodes = codes.filter(
+      code => code.started_at && code.completed_at
+    );
     
     if (completedCodes.length === 0) {
       return "--";
     }
     
-    const totalTimeInMs = completedCodes.reduce((total, code) => {
-      const startTime = new Date(code.started_at!).getTime();
-      const endTime = new Date(code.completed_at!).getTime();
-      return total + (endTime - startTime);
-    }, 0);
+    let totalTime = 0;
     
-    const avgTimeMs = totalTimeInMs / completedCodes.length;
-    const avgTimeMin = Math.floor(avgTimeMs / (1000 * 60));
+    completedCodes.forEach(code => {
+      const startDate = new Date(code.started_at!);
+      const endDate = new Date(code.completed_at!);
+      const timeDiff = endDate.getTime() - startDate.getTime(); // in milliseconds
+      totalTime += timeDiff;
+    });
     
-    return avgTimeMin === 1 ? "1 minute" : `${avgTimeMin} minutes`;
+    const avgTimeInMillis = totalTime / completedCodes.length;
+    const avgTimeInMinutes = Math.round(avgTimeInMillis / (1000 * 60));
+    
+    return `${avgTimeInMinutes} min`;
   };
   
-  // Load all data from Supabase
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        // Get current user's email
-        const { data: { session } } = await supabase.auth.getSession();
+        // Get user's email from session
         const userEmail = session?.user?.email;
         setUserEmail(userEmail || "");
         
@@ -135,10 +157,12 @@ const AdminDashboard: React.FC = () => {
           const { data: userData, error: userError } = await supabase
             .from('admin_users')
             .select('*')
-            .eq('email', userEmail.toLowerCase())
-            .single();
+            .eq('email', userEmail)
+            .maybeSingle();
+            
+          if (userError) throw userError;
           
-          if (!userError && userData) {
+          if (userData) {
             setUserRole(userData.role || 'partner');
           }
         }
@@ -146,72 +170,110 @@ const AdminDashboard: React.FC = () => {
         // Fetch companies
         const { data: companiesData, error: companiesError } = await supabase
           .from('companies')
-          .select()
-          .order('name');
+          .select('*');
         
         if (companiesError) throw companiesError;
+        
         setCompanies(companiesData || []);
         
-        // Fetch projects with company info
+        // Fetch projects with company names
         const { data: projectsData, error: projectsError } = await supabase
           .from('projects')
           .select(`
             *,
             companies:company_id (name)
-          `)
-          .order('name');
+          `);
         
         if (projectsError) throw projectsError;
         
-        // Transform projects data
-        const transformedProjects = projectsData?.map(project => ({
+        // Transform project data to include company name
+        const transformedProjects: Project[] = (projectsData || []).map(project => ({
           id: project.id,
           name: project.name,
           company_id: project.company_id,
-          company_name: project.companies?.name
-        })) || [];
+          company_name: project.companies ? project.companies.name : 'Unknown',
+          created_at: project.created_at
+        }));
         
         setProjects(transformedProjects);
         
-        // Fetch survey codes with project info
+        // Fetch codes with project names
         const { data: codesData, error: codesError } = await supabase
           .from('survey_codes')
           .select(`
             *,
             projects:project_id (
-              name, 
+              name,
               companies:company_id (name)
             )
-          `)
-          .order('generated_at', { ascending: false });
+          `);
         
         if (codesError) throw codesError;
         
-        // Transform codes data
-        const transformedCodes = codesData?.map(code => ({
+        // Transform codes data to include project name
+        const transformedCodes: Code[] = (codesData || []).map(code => ({
           id: code.id,
           code: code.code,
-          name: code.name,
           email: code.email,
+          name: code.name,
           project_id: code.project_id,
-          project_name: code.projects?.name,
-          company_name: code.projects?.companies?.name,
+          project_name: code.projects ? code.projects.name : 'Unknown',
+          company_name: code.projects && code.projects.companies ? code.projects.companies.name : 'Unknown',
           service_type: code.service_type,
           generated_at: code.generated_at,
           started_at: code.started_at,
           completed_at: code.completed_at
-        })) || [];
+        }));
         
         setCodes(transformedCodes);
+        calculateStats(transformedCodes);
+        const avgTime = calculateAverageResponseTime(transformedCodes);
+        setAverageResponseTime(avgTime);
         
-        // Calculate average response time
-        setAverageResponseTime(calculateAverageResponseTime(transformedCodes));
+        // Fetch answers
+        const { data: answersData, error: answersError } = await supabase
+          .from('survey_answers')
+          .select('*');
+        
+        if (answersError) throw answersError;
+        
+        // Process Code Responses
+        const processedResponses: CodeResponse[] = transformedCodes
+          .filter(code => code.started_at !== null)
+          .map(code => {
+            const codeAnswers = (answersData || [])
+              .filter(answer => answer.survey_code_id === code.id)
+              .map(answer => ({
+                question_id: answer.question_id,
+                answer: answer.answer
+              }));
+              
+            // Find the score if available
+            const npsAnswer = codeAnswers.find(answer => answer.question_id === 'nps-score');
+            const score = npsAnswer ? parseInt(npsAnswer.answer, 10) : undefined;
+            
+            return {
+              id: code.id,
+              email: code.email,
+              name: code.name,
+              project_name: code.project_name || 'Unknown',
+              code: code.code,
+              company_name: code.company_name || 'Unknown',
+              completed: code.completed_at !== null,
+              started_at: code.started_at || '',
+              completed_at: code.completed_at || '',
+              service_type: code.service_type,
+              score,
+              answers: codeAnswers
+            };
+          });
+          
+        setCodeResponses(processedResponses);
         
         // Fetch admin users
         const { data: adminUsersData, error: adminUsersError } = await supabase
           .from('admin_users')
-          .select('*')
-          .order('email');
+          .select('*');
         
         if (adminUsersError) throw adminUsersError;
         
@@ -219,80 +281,27 @@ const AdminDashboard: React.FC = () => {
         const transformedAdminUsers: AdminUser[] = (adminUsersData || []).map(user => ({
           id: user.id,
           email: user.email,
-          role: user.role || 'partner', // Default to 'partner' if role is null
-          created_at: user.created_at
+          created_at: user.created_at,
+          role: user.role || 'partner'
         }));
         
         setAdminUsers(transformedAdminUsers);
-        
-        // Fetch survey answers for NPS chart data
-        const { data: answersData, error: answersError } = await supabase
-          .from('survey_answers')
-          .select(`
-            answer,
-            question_id,
-            survey_code:survey_code_id (
-              name,
-              code,
-              service_type
-            )
-          `);
-        
-        if (answersError) throw answersError;
-        
-        // Process survey answers into responses format for charts
-        if (answersData) {
-          const processedResponses: { [key: string]: any } = {};
-          
-          answersData.forEach(answer => {
-            const code = answer.survey_code?.code || '';
-            if (!processedResponses[code]) {
-              processedResponses[code] = {
-                userName: answer.survey_code?.name || '',
-                code,
-                serviceType: answer.survey_code?.service_type || '',
-              };
-            }
-            
-            if (answer.question_id === 'recommend_score') {
-              processedResponses[code].recommendScore = parseInt(answer.answer);
-            } else if (answer.question_id === 'recommend_reason') {
-              processedResponses[code].recommendReason = answer.answer;
-            } else if (answer.question_id === 'rehire_score') {
-              processedResponses[code].rehireScore = parseInt(answer.answer);
-            } else if (answer.question_id === 'testimonial') {
-              processedResponses[code].testimonial = answer.answer;
-            } else if (answer.question_id === 'can_publish') {
-              processedResponses[code].canPublish = answer.answer === 'true';
-            }
-          });
-          
-          // Convert to array and add submittedAt
-          const responseArray = Object.values(processedResponses).map(item => ({
-            ...item,
-            submittedAt: new Date().toISOString(),
-          }));
-          
-          setResponses(responseArray as Response[]);
-        }
-        
       } catch (error: any) {
         toast({
           variant: "destructive",
-          title: "Error loading data",
-          description: error.message || "An error occurred while loading data."
+          title: "Error fetching data",
+          description: error.message || "An error occurred while fetching data."
         });
-        console.error("Error loading data:", error);
       } finally {
         setIsLoading(false);
       }
     };
     
     fetchData();
-  }, [toast]);
+  }, [session, toast]);
   
-  const handleCodeGenerated = (newCode: Code) => {
-    setCodes([newCode, ...codes]);
+  const handleAdminUserAdded = (newUser: AdminUser) => {
+    setAdminUsers([...adminUsers, newUser]);
   };
   
   const handleCompanyAdded = (company: Company) => {
@@ -303,174 +312,24 @@ const AdminDashboard: React.FC = () => {
     setProjects([...projects, project]);
   };
   
-  const handleAdminUserAdded = (adminUser: AdminUser) => {
-    setAdminUsers([...adminUsers, adminUser]);
+  const handleCodeGenerated = (code: Code) => {
+    setCodes([...codes, code]);
+    calculateStats([...codes, code]);
   };
   
-  // Calculate some quick metrics for the dashboard
-  const completedSurveys = codes.filter(c => c.completed_at).length;
-  const pendingSurveys = codes.filter(c => !c.started_at).length;
-  const progressSurveys = codes.filter(c => c.started_at && !c.completed_at).length;
-  const completionRate = codes.length > 0 
-    ? Math.round((completedSurveys / codes.length) * 100) 
-    : 0;
-
-  // Count by service type
-  const strategySurveys = codes.filter(c => c.service_type === 'strategy').length;
-  const experienceSurveys = codes.filter(c => c.service_type === 'experience').length;
-
-  // Prepare chart data by service type
-  const strategyResponses = responses.filter(r => r.serviceType === 'strategy');
-  const experienceResponses = responses.filter(r => r.serviceType === 'experience');
-    
-  // Content to display based on active section
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="flex justify-center items-center h-40">
-          <p>Loading data...</p>
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-muted-foreground">Loading dashboard...</p>
         </div>
-      );
-    }
-
-    switch (activeSection) {
-      case "dashboard":
-        return (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex flex-row items-center justify-between pb-2">
-                    <p className="text-sm font-medium">Total Surveys</p>
-                    <CodeIcon className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="text-2xl font-bold">{codes.length}</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Strategy: {strategySurveys}, Experience: {experienceSurveys}
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex flex-row items-center justify-between pb-2">
-                    <p className="text-sm font-medium">Completion Rate</p>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="text-2xl font-bold">{completionRate}%</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {completedSurveys} completed, {pendingSurveys} pending, {progressSurveys} in progress
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex flex-row items-center justify-between pb-2">
-                    <p className="text-sm font-medium">Companies & Projects</p>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="text-2xl font-bold">{companies.length} / {projects.length}</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Companies / Projects in system
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex flex-row items-center justify-between pb-2">
-                    <p className="text-sm font-medium">Avg. Response Time</p>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="text-2xl font-bold">{averageResponseTime}</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    From {codes.filter(c => c.completed_at).length} completed surveys
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="mb-8">
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="text-lg font-semibold mb-4">NPS Dashboard</h3>
-                  <NPSChart 
-                    data={responses}
-                    strategyData={strategyResponses}
-                    experienceData={experienceResponses}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-            
-            <Card>
-              <CardContent className="pt-6">
-                <h3 className="text-lg font-semibold mb-4">Recent Survey Codes</h3>
-                <CodesList 
-                  codes={codes.slice(0, 5)} 
-                  formatDate={formatDate}
-                />
-                <div className="mt-4 flex justify-center">
-                  <button 
-                    className="text-sm text-blue-500" 
-                    onClick={() => setActiveSection("generatedCodes")}
-                  >
-                    View all {codes.length} codes
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        );
-      case "generatedCodes":
-        return (
-          <GeneratedCodes 
-            codes={codes}
-            onCodeGenerated={handleCodeGenerated}
-            projects={projects}
-            formatDate={formatDate}
-          />
-        );
-      case "projects":
-        return (
-          <ProjectManagement 
-            projects={projects} 
-            companies={companies}
-            onProjectAdded={handleProjectAdded}
-          />
-        );
-      case "companies":
-        return (
-          <CompanyManagement 
-            companies={companies} 
-            onCompanyAdded={handleCompanyAdded}
-          />
-        );
-      case "adminUsers":
-        return (
-          <AdminUserManagement 
-            adminUsers={adminUsers}
-            onAdminUserAdded={handleAdminUserAdded}
-            userRole={userRole}
-          />
-        );
-      case "responses":
-        return <ResponsesList responses={responses} />;
-      default:
-        return (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              {/* Dashboard content */}
-            </div>
-          </>
-        );
-    }
-  };
-
+      </div>
+    );
+  }
+  
   return (
-    <SidebarProvider>
-      <div className="flex w-full h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden">
+      <div className="w-64 flex-none">
         <AdminSidebar 
           activeSection={activeSection}
           onSectionChange={setActiveSection}
@@ -478,24 +337,122 @@ const AdminDashboard: React.FC = () => {
           userEmail={userEmail}
           userRole={userRole}
         />
-
-        <SidebarInset className="h-screen overflow-auto">
-          <div className="container mx-auto p-6">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold">
-                {activeSection === "dashboard" && "Dashboard"}
-                {activeSection === "generatedCodes" && "Generated Codes"}
-                {activeSection === "projects" && "Projects"}
-                {activeSection === "companies" && "Companies"}
-                {activeSection === "adminUsers" && "Admin Users"}
-              </h1>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto p-6">
+        <Tabs value={activeSection} className="space-y-6">
+          <TabsContent value="dashboard" className="space-y-6">
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{stats.total}</CardTitle>
+                  <CardDescription>Total Codes Generated</CardDescription>
+                </CardHeader>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>{stats.responses}</CardTitle>
+                  <CardDescription>Survey Responses</CardDescription>
+                </CardHeader>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>{stats.participation}%</CardTitle>
+                  <CardDescription>Participation Rate</CardDescription>
+                </CardHeader>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>{stats.completed}</CardTitle>
+                  <CardDescription>Completed Surveys</CardDescription>
+                </CardHeader>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>{stats.pending}</CardTitle>
+                  <CardDescription>Pending Responses</CardDescription>
+                </CardHeader>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>{averageResponseTime}</CardTitle>
+                  <CardDescription>Average Response Time</CardDescription>
+                </CardHeader>
+              </Card>
             </div>
             
-            {renderContent()}
-          </div>
-        </SidebarInset>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>NPS Score Distribution</CardTitle>
+                </CardHeader>
+                <div className="p-6">
+                  <NPSChart responses={codeResponses} />
+                </div>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Responses</CardTitle>
+                </CardHeader>
+                <ResponsesList responses={codeResponses.slice(0, 5)} isPreview={true} />
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="responses" className="space-y-6">
+            <h1 className="text-3xl font-bold">Survey Responses</h1>
+            <ResponsesList responses={codeResponses} isPreview={false} />
+          </TabsContent>
+          
+          <TabsContent value="codes" className="space-y-6">
+            <h1 className="text-3xl font-bold">Generated Codes</h1>
+            <CodesList codes={codes} />
+          </TabsContent>
+          
+          <TabsContent value="generate" className="space-y-6">
+            <h1 className="text-3xl font-bold">Generate New Code</h1>
+            <CodeGenerator 
+              projects={projects} 
+              onCodeGenerated={handleCodeGenerated} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="companies" className="space-y-6">
+            <h1 className="text-3xl font-bold">Companies Management</h1>
+            <CompanyManagement 
+              companies={companies} 
+              onCompanyAdded={handleCompanyAdded} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="projects" className="space-y-6">
+            <h1 className="text-3xl font-bold">Projects Management</h1>
+            <ProjectManagement 
+              projects={projects} 
+              companies={companies} 
+              onProjectAdded={handleProjectAdded} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="admins" className="space-y-6">
+            <h1 className="text-3xl font-bold">Admin Users Management</h1>
+            <AdminUserManagement 
+              adminUsers={adminUsers} 
+              onAdminUserAdded={handleAdminUserAdded} 
+              userRole={userRole} 
+            />
+          </TabsContent>
+        </Tabs>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 
