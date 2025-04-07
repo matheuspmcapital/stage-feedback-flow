@@ -1,17 +1,18 @@
 
 import React, { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import NPSChart from "./NPSChart";
 import CodesList from "./CodesList";
 import ResponsesList from "./ResponsesList";
 import CodeGenerator from "./CodeGenerator";
-import { Button } from "@/components/ui/button";
-import Logo from "../Logo";
 import CompanyManagement from "./CompanyManagement";
 import ProjectManagement from "./ProjectManagement";
 import AdminUserManagement from "./AdminUserManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import AdminSidebar from "./AdminSidebar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Interfaces for our data types
 export interface Company {
@@ -59,6 +60,7 @@ export interface AdminUser {
 }
 
 const AdminDashboard: React.FC = () => {
+  const [activeSection, setActiveSection] = useState("dashboard");
   const [codes, setCodes] = useState<Code[]>([]);
   const [responses, setResponses] = useState<Response[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -68,7 +70,6 @@ const AdminDashboard: React.FC = () => {
   const { toast } = useToast();
   
   const handleLogout = () => {
-    // In a real app, would clear auth state
     localStorage.removeItem('adminSession');
     window.location.href = "/";
   };
@@ -190,78 +191,148 @@ const AdminDashboard: React.FC = () => {
     rehireScore: response.rehireScore
   }));
 
-  return (
-    <div className="min-h-screen bg-muted/20">
-      <header className="bg-white border-b p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Logo />
-            <h1 className="text-xl font-bold">Admin Dashboard</h1>
-          </div>
-          <Button variant="outline" onClick={handleLogout}>Logout</Button>
-        </div>
-      </header>
+  // Render dashboard section with summary cards and charts
+  const renderDashboard = () => (
+    <>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-4">NPS Dashboard</h2>
+        <NPSChart data={chartData} />
+      </div>
       
-      <main className="container mx-auto p-4 py-6 space-y-6">
-        {isLoading ? (
-          <div className="flex justify-center items-center h-40">
-            <p>Loading data...</p>
-          </div>
-        ) : (
-          <>
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">NPS Dashboard</h2>
-              <CodeGenerator 
-                onCodeGenerated={handleCodeGenerated} 
-                projects={projects}
-              />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Codes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{codes.length}</p>
+            <p className="text-sm text-muted-foreground">Total generated codes</p>
+            <button 
+              className="text-sm text-blue-500 mt-2" 
+              onClick={() => setActiveSection("codes")}
+            >
+              View all codes
+            </button>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Companies & Projects</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{companies.length} / {projects.length}</p>
+            <p className="text-sm text-muted-foreground">Companies / Projects</p>
+            <div className="flex gap-4 mt-2">
+              <button 
+                className="text-sm text-blue-500" 
+                onClick={() => setActiveSection("companies")}
+              >
+                Manage Companies
+              </button>
+              <button 
+                className="text-sm text-blue-500" 
+                onClick={() => setActiveSection("projects")}
+              >
+                Manage Projects
+              </button>
             </div>
-            
-            <NPSChart data={chartData} />
-            
-            <Tabs defaultValue="codes" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="codes">Generated Codes</TabsTrigger>
-                <TabsTrigger value="responses">Survey Responses</TabsTrigger>
-                <TabsTrigger value="companies">Companies</TabsTrigger>
-                <TabsTrigger value="projects">Projects</TabsTrigger>
-                <TabsTrigger value="adminUsers">Admin Users</TabsTrigger>
-              </TabsList>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <CodesList codes={codes.slice(0, 5)} />
+      <div className="mt-4 flex justify-center">
+        <button 
+          className="text-sm text-blue-500" 
+          onClick={() => setActiveSection("codes")}
+        >
+          View all {codes.length} codes
+        </button>
+      </div>
+    </>
+  );
+
+  // Content to display based on active section
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center h-40">
+          <p>Loading data...</p>
+        </div>
+      );
+    }
+
+    switch (activeSection) {
+      case "dashboard":
+        return renderDashboard();
+      case "companies":
+        return (
+          <CompanyManagement 
+            companies={companies} 
+            onCompanyAdded={handleCompanyAdded}
+          />
+        );
+      case "projects":
+        return (
+          <ProjectManagement 
+            projects={projects} 
+            companies={companies}
+            onProjectAdded={handleProjectAdded}
+          />
+        );
+      case "adminUsers":
+        return (
+          <AdminUserManagement 
+            adminUsers={adminUsers}
+            onAdminUserAdded={handleAdminUserAdded}
+          />
+        );
+      case "codes":
+        return <CodesList codes={codes} />;
+      case "responses":
+        return <ResponsesList responses={responses} />;
+      default:
+        return renderDashboard();
+    }
+  };
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-muted/20">
+        <AdminSidebar 
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+          onLogout={handleLogout}
+        />
+
+        <SidebarInset>
+          <header className="bg-white border-b p-4">
+            <div className="container mx-auto flex justify-between items-center">
+              <h1 className="text-xl font-bold">
+                {activeSection === "dashboard" && "Dashboard"}
+                {activeSection === "companies" && "Companies"}
+                {activeSection === "projects" && "Projects"}
+                {activeSection === "adminUsers" && "Admin Users"}
+                {activeSection === "codes" && "All Generated Codes"}
+                {activeSection === "responses" && "Survey Responses"}
+              </h1>
               
-              <TabsContent value="codes">
-                <CodesList codes={codes} />
-              </TabsContent>
-              
-              <TabsContent value="responses">
-                <ResponsesList responses={responses} />
-              </TabsContent>
-              
-              <TabsContent value="companies">
-                <CompanyManagement 
-                  companies={companies} 
-                  onCompanyAdded={handleCompanyAdded}
+              {activeSection === "codes" && (
+                <CodeGenerator 
+                  onCodeGenerated={handleCodeGenerated} 
+                  projects={projects}
                 />
-              </TabsContent>
-              
-              <TabsContent value="projects">
-                <ProjectManagement 
-                  projects={projects} 
-                  companies={companies}
-                  onProjectAdded={handleProjectAdded}
-                />
-              </TabsContent>
-              
-              <TabsContent value="adminUsers">
-                <AdminUserManagement 
-                  adminUsers={adminUsers}
-                  onAdminUserAdded={handleAdminUserAdded}
-                />
-              </TabsContent>
-            </Tabs>
-          </>
-        )}
-      </main>
-    </div>
+              )}
+            </div>
+          </header>
+          
+          <main className="container mx-auto p-4 py-6">
+            {renderContent()}
+          </main>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
 
