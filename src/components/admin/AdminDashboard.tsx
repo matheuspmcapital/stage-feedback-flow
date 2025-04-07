@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import NPSChart from "./NPSChart";
@@ -65,7 +64,6 @@ export interface AdminUser {
   role?: string;
 }
 
-// Dashboard component
 const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
   const [activeSection, setActiveSection] = useState<string>("dashboard");
   const [codeResponses, setCodeResponses] = useState<CodeResponse[]>([]);
@@ -83,8 +81,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
   const [averageResponseTime, setAverageResponseTime] = useState<string>("--");
   const [userRole, setUserRole] = useState<string>("partner");
   const [userEmail, setUserEmail] = useState<string>("");
-  const { toast } = useToast();
-  
+
   const handleLogout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -97,12 +94,12 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
       });
     }
   };
-  
+
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "--";
     return new Date(dateString).toLocaleDateString();
   };
-  
+
   const calculateStats = (codes: Code[]) => {
     const total = codes.length;
     const started = codes.filter(code => code.started_at).length;
@@ -117,7 +114,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
       participation,
     });
   };
-  
+
   const calculateAverageResponseTime = (codes: Code[]) => {
     const completedCodes = codes.filter(
       code => code.started_at && code.completed_at
@@ -137,11 +134,12 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
     });
     
     const avgTimeInMillis = totalTime / completedCodes.length;
-    const avgTimeInMinutes = Math.round(avgTimeInMillis / (1000 * 60));
+    const avgTimeInMinutes = Math.floor(avgTimeInMillis / (1000 * 60));
+    const avgTimeInSeconds = Math.floor((avgTimeInMillis % (1000 * 60)) / 1000);
     
-    return `${avgTimeInMinutes} min`;
+    return `${avgTimeInMinutes} min ${avgTimeInSeconds} sec`;
   };
-  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -150,7 +148,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
         const userEmail = session?.user?.email;
         setUserEmail(userEmail || "");
         
-        // Get user role
         if (userEmail) {
           setUserRole("admin"); // Default role
         }
@@ -259,20 +256,20 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
     
     fetchData();
   }, [session, toast]);
-  
+
   const handleCompanyAdded = (company: Company) => {
     setCompanies([...companies, company]);
   };
-  
+
   const handleProjectAdded = (project: Project) => {
     setProjects([...projects, project]);
   };
-  
+
   const handleCodeGenerated = (code: Code) => {
     setCodes([...codes, code]);
     calculateStats([...codes, code]);
   };
-  
+
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -282,7 +279,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
       </div>
     );
   }
-  
+
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="w-64 flex-none">
@@ -295,50 +292,50 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
         />
       </div>
       
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
         <Tabs value={activeSection} className="space-y-6">
           <TabsContent value="dashboard" className="space-y-6">
             <h1 className="text-3xl font-bold">Dashboard</h1>
             
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <Card>
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/30 border-blue-200 dark:border-blue-700/50">
                 <CardHeader>
-                  <CardTitle>{stats.total}</CardTitle>
+                  <CardTitle className="text-blue-800 dark:text-blue-300">{stats.total}</CardTitle>
                   <CardDescription>Total Codes Generated</CardDescription>
                 </CardHeader>
               </Card>
               
-              <Card>
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/30 border-green-200 dark:border-green-700/50">
                 <CardHeader>
-                  <CardTitle>{stats.responses}</CardTitle>
+                  <CardTitle className="text-green-800 dark:text-green-300">{stats.responses}</CardTitle>
                   <CardDescription>Survey Responses</CardDescription>
                 </CardHeader>
               </Card>
               
-              <Card>
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/30 border-purple-200 dark:border-purple-700/50">
                 <CardHeader>
-                  <CardTitle>{stats.participation}%</CardTitle>
+                  <CardTitle className="text-purple-800 dark:text-purple-300">{stats.participation}%</CardTitle>
                   <CardDescription>Participation Rate</CardDescription>
                 </CardHeader>
               </Card>
               
-              <Card>
+              <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/30 border-amber-200 dark:border-amber-700/50">
                 <CardHeader>
-                  <CardTitle>{stats.completed}</CardTitle>
+                  <CardTitle className="text-amber-800 dark:text-amber-300">{stats.completed}</CardTitle>
                   <CardDescription>Completed Surveys</CardDescription>
                 </CardHeader>
               </Card>
               
-              <Card>
+              <Card className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/30 border-pink-200 dark:border-pink-700/50">
                 <CardHeader>
-                  <CardTitle>{stats.pending}</CardTitle>
+                  <CardTitle className="text-pink-800 dark:text-pink-300">{stats.pending}</CardTitle>
                   <CardDescription>Pending Responses</CardDescription>
                 </CardHeader>
               </Card>
               
-              <Card>
+              <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/30 border-indigo-200 dark:border-indigo-700/50">
                 <CardHeader>
-                  <CardTitle>{averageResponseTime}</CardTitle>
+                  <CardTitle className="text-indigo-800 dark:text-indigo-300">{averageResponseTime}</CardTitle>
                   <CardDescription>Average Response Time</CardDescription>
                 </CardHeader>
               </Card>
