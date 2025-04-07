@@ -8,12 +8,14 @@ import Logo from "../Logo";
 import { motion } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Navigate } from "react-router-dom";
 
 const AdminLogin: React.FC = () => {
   const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [redirect, setRedirect] = useState(false);
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -32,13 +34,28 @@ const AdminLogin: React.FC = () => {
       });
       
       if (error) {
-        throw new Error(error.message || "Invalid login credentials.");
+        throw new Error(error.message);
+      }
+      
+      // Successfully signed in, check if user is admin
+      const { data: adminUser, error: adminError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+      
+      if (adminError || !adminUser) {
+        // If not an admin, sign out and show error
+        await supabase.auth.signOut();
+        throw new Error("You don't have admin access.");
       }
       
       toast({
         title: "Login Successful",
         description: "Welcome to the admin dashboard.",
       });
+      
+      setRedirect(true);
       
     } catch (error: any) {
       toast({
@@ -51,6 +68,10 @@ const AdminLogin: React.FC = () => {
       setIsLoggingIn(false);
     }
   };
+
+  if (redirect) {
+    return <Navigate to="/admin-stage" />;
+  }
 
   return (
     <motion.div 

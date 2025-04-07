@@ -9,41 +9,44 @@ import { Session } from "@supabase/supabase-js";
 const Admin = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const { toast } = useToast();
   const [session, setSession] = useState<Session | null>(null);
+  const { toast } = useToast();
   
-  // Check if session exists in Supabase Auth
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_IN' && session) {
-          setIsLoggedIn(true);
-          setSession(session);
-          
-          // Check if this user exists in admin_users
+          // When signed in, verify if user is an admin
           setTimeout(async () => {
-            const { data, error: userError } = await supabase
+            const { data, error } = await supabase
               .from('admin_users')
               .select('*')
               .eq('email', session.user.email)
               .maybeSingle();
-
-            if (userError || !data) {
-              // If not in admin_users table, sign out
+              
+            if (error || !data) {
+              // Not an admin user, sign out
               await supabase.auth.signOut();
               setIsLoggedIn(false);
               setSession(null);
               toast({
                 variant: "destructive",
                 title: "Access Denied",
-                description: "You don't have admin access. Please contact support."
+                description: "You don't have admin access."
               });
+            } else {
+              // Is an admin user
+              setIsLoggedIn(true);
+              setSession(session);
             }
+            
+            setIsLoading(false);
           }, 0);
         } else if (event === 'SIGNED_OUT') {
           setIsLoggedIn(false);
           setSession(null);
+          setIsLoading(false);
         }
       }
     );
@@ -51,39 +54,29 @@ const Admin = () => {
     // THEN check for existing session
     const checkSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error("Error checking session:", error);
-          setIsLoggedIn(false);
-        } else if (session) {
-          setSession(session);
-          setIsLoggedIn(true);
-
-          // Check if this user exists in admin_users
-          const { data, error: userError } = await supabase
+        if (session) {
+          // Verify if this user is an admin
+          const { data, error } = await supabase
             .from('admin_users')
             .select('*')
             .eq('email', session.user.email)
             .maybeSingle();
-
-          if (userError || !data) {
-            // If not in admin_users table, sign out
+            
+          if (error || !data) {
+            // Not an admin user, sign out
             await supabase.auth.signOut();
             setIsLoggedIn(false);
             setSession(null);
-            toast({
-              variant: "destructive",
-              title: "Access Denied",
-              description: "You don't have admin access. Please contact support."
-            });
+          } else {
+            // Is an admin user
+            setIsLoggedIn(true);
+            setSession(session);
           }
-        } else {
-          setIsLoggedIn(false);
         }
       } catch (err) {
         console.error("Error checking auth status:", err);
-        setIsLoggedIn(false);
       } finally {
         setIsLoading(false);
       }
@@ -100,7 +93,7 @@ const Admin = () => {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
-  return isLoggedIn ? (
+  return isLoggedIn && session ? (
     <AdminDashboard session={session} />
   ) : (
     <AdminLogin />
