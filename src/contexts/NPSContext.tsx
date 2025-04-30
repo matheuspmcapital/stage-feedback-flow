@@ -3,9 +3,12 @@ import React, { createContext, useContext, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
+export type Scope = 'strategy' | 'design' | 'solutions' | 'tech' | 'm&a'
+
 export interface NPSData {
   userName: string;
   code: string;
+  scope: Scope[];
   recommendScore: number;
   recommendReason: string;
   rehireScore: number;
@@ -22,6 +25,7 @@ interface NPSContextType {
   userName: string;
   code: string;
   codeValidated: boolean;
+  setScope: (scope: Scope) => void;
   setUserName: (name: string) => void;
   setCode: (code: string) => void;
   setCodeValidated: (validated: boolean) => void;
@@ -38,6 +42,7 @@ interface NPSContextType {
 const initialData: NPSData = {
   userName: "",
   code: "",
+  scope: [],
   recommendScore: 0,
   recommendReason: "",
   rehireScore: 0,
@@ -68,17 +73,17 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
   const recordStep = async (questionId: string, answer: any) => {
     try {
       if (!code) return;
-      
+
       const { data: codeData, error: codeError } = await supabase
         .from('survey_codes')
         .select('id')
         .eq('code', code)
         .single();
-      
+
       if (codeError || !codeData) {
         throw new Error("Invalid survey code");
       }
-      
+
       const { error } = await supabase
         .from('survey_answers')
         .insert({
@@ -86,9 +91,9 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
           question_id: questionId,
           answer: typeof answer === 'object' ? JSON.stringify(answer) : String(answer)
         });
-      
+
       if (error) throw error;
-      
+
     } catch (error) {
       console.error("Error recording step:", error);
     }
@@ -119,19 +124,31 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
     recordStep("can_publish", canPublish);
   };
 
+  const setScope = (scope: Scope) => {
+    let updatedScope = npsData.scope;
+
+    if (updatedScope.find((item) => item === scope)) {
+      updatedScope = updatedScope.filter((item) => item !== scope)
+    } else {
+      updatedScope = [...updatedScope, scope]
+    }
+
+    setNpsData({ ...npsData, scope: updatedScope })
+  }
+
   const submitResponses = async (): Promise<boolean> => {
     try {
       if (!code) return false;
-      
+
       const { error } = await supabase
         .from('survey_codes')
         .update({ completed_at: new Date().toISOString() })
         .eq('code', code);
-      
+
       if (error) throw error;
-      
+
       await recordStep("submission", { submitted: true });
-      
+
       return true;
     } catch (error) {
       console.error("Error submitting responses:", error);
@@ -151,6 +168,7 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         userName,
         code,
         codeValidated,
+        setScope,
         setUserName,
         setCode,
         setCodeValidated,

@@ -16,6 +16,11 @@ export const translations: Translations = {
     en: "Participate in our satisfaction survey. It's just 5 questions.",
     es: "Participe en nuestra encuesta de satisfacción. Son solo 5 preguntas."
   },
+  scope: {
+    pt: "Qual frente da Stage foi responsável pelo seu projeto:",
+    en: "Which area of expertise from Stage was responsible for your project:",
+    es: "¿Qué área de actuación de Stage fue responsable de tu proyecto:",
+  },
   start: {
     pt: "Iniciar",
     en: "Start",
