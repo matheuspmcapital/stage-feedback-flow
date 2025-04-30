@@ -13,6 +13,7 @@ import ThankYouScreen from "./Screens/ThankYouScreen";
 import LanguageSelector from "./LanguageSelector";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import StageSplitScreen from './StageSplitScreen';
 
 enum Step {
   Welcome,
@@ -32,7 +33,7 @@ const NPSFlow: React.FC = () => {
   const { npsData, code, codeValidated, submitResponses } = useNPS();
   const { toast } = useToast();
   const [isCheckingCode, setIsCheckingCode] = useState(true);
-  
+
   // Check if code has already been completed
   useEffect(() => {
     const checkCodeStatus = async () => {
@@ -40,14 +41,14 @@ const NPSFlow: React.FC = () => {
         setIsCheckingCode(false);
         return;
       }
-      
+
       try {
         const { data, error } = await supabase
           .from('survey_codes')
           .select('completed_at')
           .eq('code', code)
           .single();
-        
+
         if (error) {
           console.error("Error checking code:", error);
         } else if (data && data.completed_at) {
@@ -67,10 +68,10 @@ const NPSFlow: React.FC = () => {
         setIsCheckingCode(false);
       }
     };
-    
+
     checkCodeStatus();
   }, [codeValidated, code]);
-  
+
   const goToNext = () => {
     setDirection("forward");
     setCurrentStep((prev) => prev + 1 as Step);
@@ -84,7 +85,7 @@ const NPSFlow: React.FC = () => {
   const handleSubmit = async () => {
     try {
       const success = await submitResponses();
-      
+
       if (success) {
         toast({
           title: "Survey submitted",
@@ -109,40 +110,44 @@ const NPSFlow: React.FC = () => {
   return (
     <div className="min-h-screen">
       <LanguageSelector />
-      
+
       <AnimatePresence mode="wait" initial={false}>
         {currentStep === Step.Welcome && (
           <WelcomeScreen key="welcome" onNext={goToNext} />
         )}
-        
-        {currentStep === Step.Recommend && (
-          <RecommendScreen key="recommend" onNext={goToNext} onPrev={goToPrev} />
+
+        {(currentStep !== Step.Welcome && currentStep !== Step.ThankYou && currentStep !== Step.CodeUsed) && (
+          <StageSplitScreen>
+            {currentStep === Step.Recommend && (
+                <RecommendScreen key="recommend" onNext={goToNext} onPrev={goToPrev} />
+              )}
+
+              {currentStep === Step.Reason && (
+                <ReasonScreen key="reason" onNext={goToNext} onPrev={goToPrev} />
+              )}
+
+              {currentStep === Step.Rehire && (
+                <RehireScreen key="rehire" onNext={goToNext} onPrev={goToPrev} />
+              )}
+
+              {currentStep === Step.Testimonial && (
+                <TestimonialScreen key="testimonial" onNext={goToNext} onPrev={goToPrev} />
+              )}
+
+              {currentStep === Step.Publish && (
+                <PublishScreen key="publish" onNext={goToNext} onPrev={goToPrev} />
+              )}
+
+              {currentStep === Step.Summary && (
+                <SummaryScreen key="summary" onNext={goToNext} onPrev={goToPrev} onSubmit={handleSubmit} />
+              )}
+          </StageSplitScreen>
         )}
-        
-        {currentStep === Step.Reason && (
-          <ReasonScreen key="reason" onNext={goToNext} onPrev={goToPrev} />
-        )}
-        
-        {currentStep === Step.Rehire && (
-          <RehireScreen key="rehire" onNext={goToNext} onPrev={goToPrev} />
-        )}
-        
-        {currentStep === Step.Testimonial && (
-          <TestimonialScreen key="testimonial" onNext={goToNext} onPrev={goToPrev} />
-        )}
-        
-        {currentStep === Step.Publish && (
-          <PublishScreen key="publish" onNext={goToNext} onPrev={goToPrev} />
-        )}
-        
-        {currentStep === Step.Summary && (
-          <SummaryScreen key="summary" onNext={goToNext} onPrev={goToPrev} onSubmit={handleSubmit} />
-        )}
-        
+
         {currentStep === Step.ThankYou && (
           <ThankYouScreen key="thank-you" />
         )}
-        
+
         {currentStep === Step.CodeUsed && (
           <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
             <h2 className="text-2xl font-bold mb-4">This survey code has already been used</h2>
