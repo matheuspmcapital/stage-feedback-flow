@@ -23,7 +23,7 @@ const scopeOptions: { slug: Scope, title: string }[] = [
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
   const { t } = useLanguage();
-  const { userName, npsData, setScope } = useNPS();
+  const { npsData } = useNPS();
 
   return (
     <div className="flex">
@@ -57,9 +57,8 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
             <div className="flex flex-wrap justify-center gap-4">
               {scopeOptions.map((scope) => (
                 <button
-                  onClick={() => setScope(scope.slug)}
                   className={`
-                    text-lg font-thin border cursor-pointer py-2 px-4 rounded-full
+                    text-lg font-thin border py-2 px-4 rounded-full cursor-default
                     ${npsData.scope.includes(scope.slug) ? 'border-[#5200CE] bg-[#5200CE] text-[#FFFFFF]' : 'border-[#EADDFF] bg-[#FFFBFE] text-[#21005E]'}
                   `}
                 >{scope.title}</button>

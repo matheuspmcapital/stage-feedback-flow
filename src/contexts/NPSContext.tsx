@@ -26,7 +26,6 @@ interface NPSContextType {
   userName: string;
   code: string;
   codeValidated: boolean;
-  setScope: (scope: Scope) => void;
   setUserName: (name: string) => void;
   setCode: (code: string) => void;
   setCodeValidated: (validated: boolean) => void;
@@ -125,18 +124,6 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
     recordStep("can_publish", canPublish);
   };
 
-  const setScope = (scope: Scope) => {
-    let updatedScope = npsData.scope;
-
-    if (updatedScope.find((item) => item === scope)) {
-      updatedScope = updatedScope.filter((item) => item !== scope)
-    } else {
-      updatedScope = [...updatedScope, scope]
-    }
-
-    setNpsData({ ...npsData, scope: updatedScope })
-  }
-
   const submitResponses = async (): Promise<boolean> => {
     try {
       if (!code) return false;
@@ -169,7 +156,6 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         userName,
         code,
         codeValidated,
-        setScope,
         setUserName,
         setCode,
         setCodeValidated,

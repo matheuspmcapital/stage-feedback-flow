@@ -26,7 +26,7 @@ export default function StageSplitScreen({ children }: StageSplitScreenProps) {
     <div className="flex">
       <div className="flex-1 bg-[#21005E] flex items-center justify-center bg-cover" style={{ backgroundImage: `url(${backgroundImage})` }}>
         <GooeyText
-          texts={["Stage", "is", "Strategy", "&", "Business"]}
+          texts={["Stage", "is", "Strategy", "&", "Business", "Design", "Technology", "Solutions", "M&A", "and", "Finance"]}
           morphTime={1}
           cooldownTime={0.25}
           className="font-bold"
