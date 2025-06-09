@@ -184,7 +184,7 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
         <Label>Service Type</Label>
         <RadioGroup value={serviceType} onValueChange={setServiceType}>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="Experience" id="Experience" />
+            <RadioGroupItem value="experience" id="experience" />
             <Label htmlFor="Experience">Experience</Label>
           </div>
           <div className="flex items-center space-x-2">
