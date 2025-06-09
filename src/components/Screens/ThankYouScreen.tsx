@@ -19,7 +19,7 @@ const ThankYouScreen: React.FC = () => {
     >
       <div className="flex flex-col items-center text-center space-y-6">
         <img
-          src="public/lovable-uploads/65aee1e3-c45f-429a-b936-1588d3994a06.png"
+          src="public/uploads/65aee1e3-c45f-429a-b936-1588d3994a06.png"
           alt="Thank you illustration"
           className="w-64 mb-6"
         />
