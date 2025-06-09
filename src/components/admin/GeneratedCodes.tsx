@@ -202,7 +202,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="Strategy">Strategy</SelectItem>
-                  <SelectItem value="Experience">Experience</SelectItem>
+                  <SelectItem value="experience">Experience</SelectItem>
                   <SelectItem value="NexStage">NexStage</SelectItem>
                 </SelectContent>
               </Select>
