@@ -101,7 +101,7 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
             <div>
               <p className="text-sm font-medium text-muted-foreground">Service Type</p>
               <Badge variant={code.service_type === "experience" ? "default" : "outline"}>
-                {code.service_type === "experience" ? "Experience" : "Strategy"}
+                {code.service_type}
               </Badge>
             </div>
           </CardContent>
