@@ -122,6 +122,7 @@ export type Database = {
           email: string
           generated_at: string
           id: string
+          language: string
           name: string
           project_id: string
           service_type: string
@@ -133,6 +134,7 @@ export type Database = {
           email: string
           generated_at?: string
           id?: string
+          language?: string
           name: string
           project_id: string
           service_type: string
@@ -144,6 +146,7 @@ export type Database = {
           email?: string
           generated_at?: string
           id?: string
+          language?: string
           name?: string
           project_id?: string
           service_type?: string
