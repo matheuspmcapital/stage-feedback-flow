@@ -4,12 +4,11 @@ import React, { createContext, useContext, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
-export type Scope = 'strategy' | 'design' | 'solutions' | 'tech' | 'm&a'
+export type Scope = 'strategy' | 'design' | 'solutions' | 'tech' | 'm&a' | 'finance'
 
 export interface NPSData {
   userName: string;
   code: string;
-  scope: Scope[];
   recommendScore: number;
   recommendReason: string;
   rehireScore: number;
@@ -26,9 +25,11 @@ interface NPSContextType {
   userName: string;
   code: string;
   codeValidated: boolean;
+  scopes: string[];
   setUserName: (name: string) => void;
   setCode: (code: string) => void;
   setCodeValidated: (validated: boolean) => void;
+  setScopes: (scopes: string[]) => void;
   setRecommendScore: (score: number) => void;
   setRecommendReason: (reason: string) => void;
   setRehireScore: (score: number) => void;
@@ -42,7 +43,6 @@ interface NPSContextType {
 const initialData: NPSData = {
   userName: "",
   code: "",
-  scope: [],
   recommendScore: 0,
   recommendReason: "",
   rehireScore: 0,
@@ -56,6 +56,7 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
   const [npsData, setNpsData] = useState<NPSData>(initialData);
   const [userName, setUserName] = useState("");
   const [code, setCode] = useState("");
+  const [scopes, setScopes] = useState([]);
   const [codeValidated, setCodeValidated] = useState(false);
   const { toast } = useToast();
 
@@ -156,9 +157,11 @@ export const NPSProvider: React.FC<NPSProviderProps> = ({ children }) => {
         userName,
         code,
         codeValidated,
+        scopes,
         setUserName,
         setCode,
         setCodeValidated,
+        setScopes,
         setRecommendScore,
         setRecommendReason,
         setRehireScore,

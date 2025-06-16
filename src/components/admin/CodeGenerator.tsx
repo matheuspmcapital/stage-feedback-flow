@@ -4,16 +4,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Code, Project } from "./AdminDashboard";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Scope } from '@/contexts/NPSContext';
 
 interface CodeGeneratorProps {
   onCodeGenerated: (code: Code) => void;
@@ -25,6 +27,7 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
   const [email, setEmail] = useState("");
   const [projectId, setProjectId] = useState("");
   const [serviceType, setServiceType] = useState("experience");
+  const [scopes, setScopes] = useState<Scope[]>([]);
   const [language, setLanguage] = useState("pt"); // Default language: Portuguese
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -41,7 +44,7 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name || !email || !projectId) {
       toast({
         variant: "destructive",
@@ -50,21 +53,21 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
       });
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
-      
+
       // Generate custom code instead of using DB function
       const randomCode = generateRandomCode();
-      
+
       // Check if the code already exists
       const { data: existingCodes, error: checkError } = await supabase
         .from('survey_codes')
         .select('code')
         .eq('code', randomCode);
-      
+
       if (checkError) throw checkError;
-      
+
       if (existingCodes && existingCodes.length > 0) {
         // If code exists, try again
         toast({
@@ -74,7 +77,7 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
         });
         return;
       }
-      
+
       // Insert new code into Supabase
       const { data, error } = await supabase
         .from('survey_codes')
@@ -84,19 +87,20 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
           email,
           project_id: projectId,
           service_type: serviceType,
-          language // Store the selected language
+          language,
+          scopes // Add scopes to the database insert
         })
         .select(`
           *,
           projects:project_id (
-            name, 
+            name,
             companies:company_id (name)
           )
         `)
         .single();
-      
+
       if (error) throw error;
-      
+
       if (data) {
         // Transform the code data
         const newCode: Code = {
@@ -108,27 +112,29 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
           project_name: data.projects?.name,
           company_name: data.projects?.companies?.name,
           service_type: data.service_type,
-          language: data.language || 'pt', // Add default if missing
+          language: data.language || 'pt',
+          scopes: (data.scopes as Scope[]) || [], // Add scopes to the returned code
           generated_at: data.generated_at,
           started_at: data.started_at,
           completed_at: data.completed_at
         };
-        
+
         onCodeGenerated(newCode);
-        
+
         toast({
           title: "Code Generated",
           description: `Code ${data.code} was created successfully.`
         });
-        
+
         // Reset form
         setName("");
         setEmail("");
         setProjectId("");
         setServiceType("experience");
         setLanguage("pt");
+        setScopes([]); // Reset scopes
       }
-      
+
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -137,6 +143,14 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleScopeChange = (scope: Scope, checked: boolean) => {
+    if (checked) {
+      setScopes([...scopes, scope]);
+    } else {
+      setScopes(scopes.filter(s => s !== scope));
     }
   };
 
@@ -196,6 +210,51 @@ const CodeGenerator: React.FC<CodeGeneratorProps> = ({ onCodeGenerated, projects
             <Label htmlFor="NexStage">NexStage</Label>
           </div>
         </RadioGroup>
+      </div>
+      <div className="space-y-2">
+        <Label>Scopes</Label>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="strategy"
+              checked={scopes.includes('strategy')}
+              onCheckedChange={(checked) => handleScopeChange('strategy', checked as boolean)}
+            />
+            <Label htmlFor="strategy">Strategy</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="design"
+              checked={scopes.includes('design')}
+              onCheckedChange={(checked) => handleScopeChange('design', checked as boolean)}
+            />
+            <Label htmlFor="design">Design</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="solutions"
+              checked={scopes.includes('solutions')}
+              onCheckedChange={(checked) => handleScopeChange('solutions', checked as boolean)}
+            />
+            <Label htmlFor="solutions">Solutions</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="tech"
+              checked={scopes.includes('tech')}
+              onCheckedChange={(checked) => handleScopeChange('tech', checked as boolean)}
+            />
+            <Label htmlFor="tech">Tech</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="m&a"
+              checked={scopes.includes('m&a')}
+              onCheckedChange={(checked) => handleScopeChange('m&a', checked as boolean)}
+            />
+            <Label htmlFor="m&a">M&A</Label>
+          </div>
+        </div>
       </div>
       <div className="space-y-2">
         <Label>Language</Label>

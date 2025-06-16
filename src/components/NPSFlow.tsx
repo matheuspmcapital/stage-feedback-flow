@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNPS } from "../contexts/NPSContext";
 import { AnimatePresence } from "framer-motion";

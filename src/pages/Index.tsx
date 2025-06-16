@@ -15,7 +15,7 @@ const Index = () => {
   const langParam = searchParams.get("lang") as "pt" | "en" | "es" | null;
   const [hasValidCode, setHasValidCode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { setUserName, setCode, setCodeValidated } = useNPS();
+  const { setUserName, setCode, setCodeValidated, setScopes } = useNPS();
   const { setLanguage } = useLanguage();
   const { toast } = useToast();
 
@@ -30,13 +30,13 @@ const Index = () => {
   const validateCode = async (code: string) => {
     try {
       setIsLoading(true);
-      
+
       const { data, error } = await supabase
         .from('survey_codes')
         .select('*')
         .eq('code', code)
         .single();
-      
+
       if (error || !data) {
         toast({
           variant: "destructive",
@@ -45,7 +45,7 @@ const Index = () => {
         });
         return false;
       }
-      
+
       // Update started_at if not already set
       if (!data.started_at) {
         await supabase
@@ -53,12 +53,13 @@ const Index = () => {
           .update({ started_at: new Date().toISOString() })
           .eq('id', data.id);
       }
-      
+
       setUserName(data.name || '');
       setCode(code);
+      setScopes(data.scopes);
       setCodeValidated(true);
       return true;
-      
+
     } catch (error) {
       console.error("Error validating code:", error);
       toast({
@@ -87,7 +88,7 @@ const Index = () => {
   }
 
   return hasValidCode ? (
-    <NPSFlow /> 
+    <NPSFlow />
   ) : (
     <AuroraBackground>
       <CodeInput onValidCode={handleValidCode} prefilledCode={codeParam || ""} />

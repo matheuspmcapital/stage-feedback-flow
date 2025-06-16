@@ -126,6 +126,7 @@ export type Database = {
           name: string
           project_id: string
           service_type: string
+          scopes: string[]
           started_at: string | null
         }
         Insert: {
@@ -138,6 +139,7 @@ export type Database = {
           name: string
           project_id: string
           service_type: string
+          scopes: string[]
           started_at?: string | null
         }
         Update: {
@@ -150,6 +152,7 @@ export type Database = {
           name?: string
           project_id?: string
           service_type?: string
+          scopes?: string[]
           started_at?: string | null
         }
         Relationships: [

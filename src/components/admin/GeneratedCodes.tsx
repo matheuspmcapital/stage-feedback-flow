@@ -48,11 +48,12 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
   const [selectedCode, setSelectedCode] = useState<Code | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterServiceType, setFilterServiceType] = useState<string | null>(null);
+  const [filterScopes, setFilterScopes] = useState<string[] | null>([]);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [sortField, setSortField] = useState<string>("generated_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
-  
+
 
   const pageSize = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,14 +61,14 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
   // Calculate time spent for each code
   const calculateTimeSpent = (code: Code): string => {
     if (!code.started_at || !code.completed_at) return "--";
-    
+
     const startTime = new Date(code.started_at).getTime();
     const endTime = new Date(code.completed_at).getTime();
     const diffInSeconds = Math.floor((endTime - startTime) / 1000);
-    
+
     const minutes = Math.floor(diffInSeconds / 60);
     const seconds = diffInSeconds % 60;
-    
+
     return `${minutes}m ${seconds}s`;
   };
 
@@ -79,14 +80,14 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
       });
     });
   };
-  
+
   const handleCopyUrl = (code: Code) => {
     // Get the base URL
     const baseUrl = window.location.origin;
     // Create the full URL with parameters
     const language = code.language || "pt"; // Default to pt if not set
     const fullUrl = `${baseUrl}/?lang=${language}&code=${code.code}`;
-    
+
     navigator.clipboard.writeText(fullUrl).then(() => {
       toast({
         title: "URL Copied to Clipboard",
@@ -98,15 +99,17 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
   const { toast } = useToast();
   // Filter and sort codes
   const filteredCodes = codes.filter(code => {
-    const matchesSearch = 
+    const matchesSearch =
       code.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       code.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       code.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (code.project_name && code.project_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (code.company_name && code.company_name.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     const matchesServiceType = !filterServiceType || code.service_type === filterServiceType;
-    
+
+    const matchesScope = !filterScopes.length || code.scopes?.some((scope) => filterScopes.includes(scope));
+
     let matchesStatus = true;
     if (filterStatus === "completed") {
       matchesStatus = !!code.completed_at;
@@ -115,14 +118,14 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
     } else if (filterStatus === "pending") {
       matchesStatus = !code.started_at;
     }
-    
-    return matchesSearch && matchesServiceType && matchesStatus;
+
+    return matchesSearch && matchesServiceType && matchesScope && matchesStatus;
   });
 
   // Sort codes
   const sortedCodes = [...filteredCodes].sort((a, b) => {
     let valueA, valueB;
-    
+
     switch (sortField) {
       case "name":
         valueA = a.name.toLowerCase();
@@ -152,11 +155,11 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
         valueA = new Date(a.generated_at).getTime();
         valueB = new Date(b.generated_at).getTime();
     }
-    
-    const comparison = typeof valueA === 'string' 
+
+    const comparison = typeof valueA === 'string'
       ? valueA.localeCompare(valueB as string)
       : (valueA as number) - (valueB as number);
-      
+
     return sortDirection === "asc" ? comparison : -comparison;
   });
 
@@ -176,7 +179,13 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
     }
   };
 
-  
+  const toggleScopesFilter = (scope: string) => {
+    setFilterScopes((prev) => prev.includes(scope)
+      ? prev.filter((prev) => prev != scope)
+      : [...prev, scope]
+    )
+  }
+
   return (
     <div className="space-y-4">
       <Card>
@@ -207,6 +216,30 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                 </SelectContent>
               </Select>
 
+              <Select>
+                <SelectTrigger className="w-[200px]">
+                  <div className="truncate">
+                    {filterScopes.length === 0 ? "All Scopes" : filterScopes.join(", ")}
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {["strategy", "tech", "design", "solutions", "finance", "m&a"].map(scope => (
+                    <div
+                      key={scope}
+                      className="flex items-center space-x-2 px-4 py-2 cursor-pointer hover:bg-muted"
+                      onClick={() => toggleScopesFilter(scope)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={filterScopes.includes(scope)}
+                        readOnly
+                      />
+                      <label className="capitalize">{scope}</label>
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Select
                 value={filterStatus || "all"}
                 onValueChange={(value) => setFilterStatus(value === "all" ? null : value)}
@@ -225,7 +258,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
               <Button variant="outline" size="icon">
                 <SlidersHorizontal className="h-4 w-4" />
               </Button>
-              
+
               <Button onClick={() => setIsGeneratorOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Generate Code
@@ -249,6 +282,9 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                   <TableHead className="cursor-pointer hidden md:table-cell" onClick={() => toggleSort("service_type")}>
                     Type {sortField === "service_type" && <ArrowUpDown className="ml-2 h-4 w-4 inline" />}
                   </TableHead>
+                  <TableHead className="cursor-pointer hidden md:table-cell" onClick={() => toggleSort("scopes")}>
+                    Scopes {sortField === "scopes" && <ArrowUpDown className="ml-2 h-4 w-4 inline" />}
+                  </TableHead>
                   <TableHead className="cursor-pointer" onClick={() => toggleSort("status")}>
                     Status {sortField === "status" && <ArrowUpDown className="ml-2 h-4 w-4 inline" />}
                   </TableHead>
@@ -265,10 +301,10 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                     <TableCell className="font-mono">
                       {code.code}
 
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleCopyCode(code.code)} 
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleCopyCode(code.code)}
                         className="h-4 w-4 ml-2"
                       >
                         <ClipboardCopy className="h-4 w-4" />
@@ -295,6 +331,13 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                         {code.service_type}
                       </Badge>
                     </TableCell>
+                    <TableCell className="hidden gap-2 md:flex">
+                      {
+                        code.scopes?.map((scope) => (
+                          <Badge>{scope}</Badge>
+                        ))
+                      }
+                    </TableCell>
                     <TableCell>
                       {code.completed_at ? (
                         <Badge className="bg-green-500">Completed</Badge>
@@ -312,16 +355,16 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                     </TableCell>
                     <TableCell>
                       <div className="flex">
-                        <Button 
-                          onClick={() => setSelectedCode(code)} 
-                          variant="ghost" 
+                        <Button
+                          onClick={() => setSelectedCode(code)}
+                          variant="ghost"
                           className="flex h-8 p-2"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          onClick={() => handleCopyUrl(code)} 
-                          variant="ghost" 
+                        <Button
+                          onClick={() => handleCopyUrl(code)}
+                          variant="ghost"
                           className="flex h-8 p-2"
                           title="Copy survey URL"
                         >
@@ -385,18 +428,18 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
           {selectedCode && <CodeResponseDetails code={selectedCode} />}
         </DialogContent>
       </Dialog>
-      
+
       <Dialog open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Generate New NPS Code</DialogTitle>
           </DialogHeader>
-          <CodeGenerator 
-            projects={projects} 
+          <CodeGenerator
+            projects={projects}
             onCodeGenerated={(code) => {
               onCodeGenerated(code);
               setIsGeneratorOpen(false);
-            }} 
+            }}
           />
         </DialogContent>
       </Dialog>

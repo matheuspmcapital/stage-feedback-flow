@@ -24,8 +24,8 @@ const questionMap: Record<string, string> = {
 
 const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
   const { getNPSCategory } = useNPS();
-  const [answers, setAnswers] = useState<Array<{ 
-    question_id: string; 
+  const [answers, setAnswers] = useState<Array<{
+    question_id: string;
     answer: string;
     timestamp: string;
   }>>([]);
@@ -41,10 +41,10 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
         if (error) throw error;
 
         // Sort answers by timestamp to show the progression
-        const sortedAnswers = (data || []).sort((a, b) => 
+        const sortedAnswers = (data || []).sort((a, b) =>
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
-        
+
         setAnswers(sortedAnswers);
       } catch (error) {
         console.error("Error fetching answers:", error);
@@ -67,11 +67,11 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
 
   // Calculate NPS category
   const npsCategory = !isNaN(recommendScore) ? getNPSCategory(recommendScore) : null;
-  const npsCategoryText = npsCategory === "promoter" ? "Promoter" : 
-                          npsCategory === "neutral" ? "Neutral" : 
+  const npsCategoryText = npsCategory === "promoter" ? "Promoter" :
+                          npsCategory === "neutral" ? "Neutral" :
                           npsCategory === "detractor" ? "Detractor" : "Unknown";
-  const npsCategoryColor = npsCategory === "promoter" ? "bg-green-500" : 
-                           npsCategory === "neutral" ? "bg-amber-500" : 
+  const npsCategoryColor = npsCategory === "promoter" ? "bg-green-500" :
+                           npsCategory === "neutral" ? "bg-amber-500" :
                            npsCategory === "detractor" ? "bg-red-500" : "bg-gray-500";
 
   return (
@@ -104,6 +104,18 @@ const CodeResponseDetails: React.FC<CodeResponseDetailsProps> = ({ code }) => {
                 {code.service_type}
               </Badge>
             </div>
+            {
+              !!code.scopes && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Scopes</p>
+                  <div className="flex gap-2">
+                    {
+                      code.scopes?.map((scope) => <Badge>{scope}</Badge>)
+                    }
+                  </div>
+                </div>
+              )
+            }
           </CardContent>
         </Card>
 

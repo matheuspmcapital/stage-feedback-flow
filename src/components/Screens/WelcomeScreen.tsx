@@ -23,11 +23,14 @@ const scopeOptions: { slug: Scope, title: string }[] = [
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
   const { t } = useLanguage();
-  const { npsData } = useNPS();
+  const { npsData, scopes } = useNPS();
+
+  console.log("SCOPES: ", scopes);
+  console.log("SCOPE OPTIONS: ", scopeOptions);
 
   return (
     <div className="flex">
-      <div className="flex-1 bg-[#21005E] flex items-center">
+      <div className="flex-1 bg-[#21005E] items-center hidden md:flex">
         <img src={stageDiagram} alt="Stage Scope Diagram" className="px-8" />
       </div>
       <motion.div
@@ -52,19 +55,24 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNext }) => {
           <p className="text-lg text-[#3C3C3C] mb-12">
             {t("subtitle")}
           </p>
-          <div className="flex flex-col gap-6 mb-24">
-            <p className="font-bold text-lg">{t("scope")}</p>
-            <div className="flex flex-wrap justify-center gap-4">
-              {scopeOptions.map((scope) => (
-                <button
-                  className={`
-                    text-lg font-thin border py-2 px-4 rounded-full cursor-default
-                    ${npsData.scope.includes(scope.slug) ? 'border-[#5200CE] bg-[#5200CE] text-[#FFFFFF]' : 'border-[#EADDFF] bg-[#FFFBFE] text-[#21005E]'}
-                  `}
-                >{scope.title}</button>
-              ))}
-            </div>
-          </div>
+          {
+            !!scopes?.length && (
+              <div className="flex flex-col gap-6 mb-24">
+                <p className="font-bold text-lg">{t("scope")}</p>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {scopeOptions.map((scope) => (
+                    <button
+                      className={`
+                        text-lg font-thin border py-2 px-4 rounded-full cursor-default
+                        ${scopes?.includes(scope.slug) ? 'border-[#5200CE] bg-[#5200CE] text-[#FFFFFF]' : 'border-[#EADDFF] bg-[#FFFBFE] text-[#21005E]'}
+                      `}
+                      key={scope.title}
+                    >{scope.title}</button>
+                  ))}
+                </div>
+              </div>
+            )
+          }
           <Button onClick={onNext} size="lg" className="px-8 py-6 text-lg">
             {t("start")}
           </Button>

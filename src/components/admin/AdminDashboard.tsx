@@ -10,6 +10,7 @@ import GeneratedCodes from "./GeneratedCodes";
 import CompanyManagement from "./CompanyManagement";
 import ProjectManagement from "./ProjectManagement";
 import DataTable from "./DataTable";
+import { Scope } from '@/contexts/NPSContext';
 
 export interface CodeResponse {
   id: string;
@@ -54,6 +55,7 @@ export interface Code {
   company_name?: string;
   service_type: string;
   language: string;
+  scopes: Scope[];
   generated_at: string;
   started_at: string | null;
   completed_at: string | null;
@@ -108,7 +110,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
     const started = codes.filter(code => code.started_at).length;
     const completed = codes.filter(code => code.completed_at).length;
     const participation = total > 0 ? Math.round((started / total) * 100) : 0;
-    
+
     setStats({
       total,
       pending: total - completed,
@@ -122,24 +124,24 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
     const completedCodes = codes.filter(
       code => code.started_at && code.completed_at
     );
-    
+
     if (completedCodes.length === 0) {
       return "--";
     }
-    
+
     let totalTime = 0;
-    
+
     completedCodes.forEach(code => {
       const startDate = new Date(code.started_at!);
       const endDate = new Date(code.completed_at!);
       const timeDiff = endDate.getTime() - startDate.getTime(); // in milliseconds
       totalTime += timeDiff;
     });
-    
+
     const avgTimeInMillis = totalTime / completedCodes.length;
     const avgTimeInMinutes = Math.floor(avgTimeInMillis / (1000 * 60));
     const avgTimeInSeconds = Math.floor((avgTimeInMillis % (1000 * 60)) / 1000);
-    
+
     return `${avgTimeInMinutes} min ${avgTimeInSeconds} sec`;
   };
 
@@ -147,31 +149,31 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        
+
         const userEmail = session?.user?.email;
         setUserEmail(userEmail || "");
-        
+
         if (userEmail) {
           setUserRole("admin"); // Default role
         }
-        
+
         const { data: companiesData, error: companiesError } = await supabase
           .from('companies')
           .select('*');
-        
+
         if (companiesError) throw companiesError;
-        
+
         setCompanies(companiesData || []);
-        
+
         const { data: projectsData, error: projectsError } = await supabase
           .from('projects')
           .select(`
             *,
             companies:company_id (name)
           `);
-        
+
         if (projectsError) throw projectsError;
-        
+
         const transformedProjects: Project[] = (projectsData || []).map(project => ({
           id: project.id,
           name: project.name,
@@ -179,9 +181,9 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
           company_name: project.companies ? project.companies.name : 'Unknown',
           created_at: project.created_at
         }));
-        
+
         setProjects(transformedProjects);
-        
+
         const { data: codesData, error: codesError } = await supabase
           .from('survey_codes')
           .select(`
@@ -191,9 +193,9 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
               companies:company_id (name)
             )
           `);
-        
+
         if (codesError) throw codesError;
-        
+
         const transformedCodes: Code[] = (codesData || []).map(code => ({
           id: code.id,
           code: code.code,
@@ -203,23 +205,24 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
           project_name: code.projects ? code.projects.name : 'Unknown',
           company_name: code.projects && code.projects.companies ? code.projects.companies.name : 'Unknown',
           service_type: code.service_type,
+          scopes: (code.scopes as Scope[]),
           language: code.language || 'pt',
           generated_at: code.generated_at,
           started_at: code.started_at,
           completed_at: code.completed_at
         }));
-        
+
         setCodes(transformedCodes);
         calculateStats(transformedCodes);
         const avgTime = calculateAverageResponseTime(transformedCodes);
         setAverageResponseTime(avgTime);
-        
+
         const { data: answersData, error: answersError } = await supabase
           .from('survey_answers')
           .select('*');
-        
+
         if (answersError) throw answersError;
-        
+
         const processedResponses: CodeResponse[] = transformedCodes
           .filter(code => code.started_at !== null)
           .map(code => {
@@ -229,7 +232,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
                 question_id: answer.question_id,
                 answer: typeof answer.answer === 'object' ? JSON.stringify(answer.answer) : answer.answer
               }));
-              
+
             return {
               id: code.id,
               email: code.email,
@@ -245,7 +248,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
               answers: codeAnswers
             };
           });
-          
+
         setCodeResponses(processedResponses);
       } catch (error: any) {
         toast({
@@ -257,7 +260,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
         setIsLoading(false);
       }
     };
-    
+
     fetchData();
   }, [session, toast]);
 
@@ -287,7 +290,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="w-64 flex-none">
-        <AdminSidebar 
+        <AdminSidebar
           activeSection={activeSection}
           onSectionChange={setActiveSection}
           onLogout={handleLogout}
@@ -295,12 +298,12 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
           userRole={userRole}
         />
       </div>
-      
+
       <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
         <Tabs value={activeSection} className="space-y-6">
           <TabsContent value="dashboard" className="space-y-6">
             <h1 className="text-3xl font-bold">Dashboard</h1>
-            
+
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/30 border-blue-200 dark:border-blue-700/50">
                 <CardHeader>
@@ -308,35 +311,35 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
                   <CardDescription>Total Codes Generated</CardDescription>
                 </CardHeader>
               </Card>
-              
+
               <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/30 border-purple-200 dark:border-purple-700/50">
                 <CardHeader>
                   <CardTitle className="text-purple-800 dark:text-purple-300">{stats.responses}</CardTitle>
                   <CardDescription>Survey Responses</CardDescription>
                 </CardHeader>
               </Card>
-              
+
               <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/30 border-green-200 dark:border-green-700/50">
                 <CardHeader>
                   <CardTitle className="text-green-800 dark:text-green-300">{stats.participation}%</CardTitle>
                   <CardDescription>Participation Rate</CardDescription>
                 </CardHeader>
               </Card>
-              
+
               <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/30 border-amber-200 dark:border-amber-700/50">
                 <CardHeader>
                   <CardTitle className="text-amber-800 dark:text-amber-300">{stats.completed}</CardTitle>
                   <CardDescription>Completed Surveys</CardDescription>
                 </CardHeader>
               </Card>
-              
+
               <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/30 border-red-200 dark:border-red-700/50">
                 <CardHeader>
                   <CardTitle className="text-red-800 dark:text-red-300">{stats.pending}</CardTitle>
                   <CardDescription>Pending Responses</CardDescription>
                 </CardHeader>
               </Card>
-              
+
               <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/30 border-indigo-200 dark:border-indigo-700/50">
                 <CardHeader>
                   <CardTitle className="text-indigo-800 dark:text-indigo-300">{averageResponseTime}</CardTitle>
@@ -344,7 +347,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
                 </CardHeader>
               </Card>
             </div>
-            
+
             <div className="grid grid-cols-1 gap-6">
               <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <div className="p-6">
@@ -353,31 +356,31 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
               </Card>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="codes" className="space-y-6">
             <h1 className="text-3xl font-bold">Generated Codes</h1>
-            <GeneratedCodes 
-              codes={codes} 
-              projects={projects} 
-              onCodeGenerated={handleCodeGenerated} 
+            <GeneratedCodes
+              codes={codes}
+              projects={projects}
+              onCodeGenerated={handleCodeGenerated}
               formatDate={formatDate}
             />
           </TabsContent>
-          
+
           <TabsContent value="companies" className="space-y-6">
             <h1 className="text-3xl font-bold">Companies Management</h1>
-            <CompanyManagement 
-              companies={companies} 
-              onCompanyAdded={handleCompanyAdded} 
+            <CompanyManagement
+              companies={companies}
+              onCompanyAdded={handleCompanyAdded}
             />
           </TabsContent>
-          
+
           <TabsContent value="projects" className="space-y-6">
             <h1 className="text-3xl font-bold">Projects Management</h1>
-            <ProjectManagement 
-              projects={projects} 
-              companies={companies} 
-              onProjectAdded={handleProjectAdded} 
+            <ProjectManagement
+              projects={projects}
+              companies={companies}
+              onProjectAdded={handleProjectAdded}
             />
           </TabsContent>
 
