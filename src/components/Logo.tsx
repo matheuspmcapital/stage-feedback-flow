@@ -1,6 +1,8 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import logo from "../assets/logo.png";
+
 
 const Logo: React.FC = () => {
   return (
@@ -11,7 +13,7 @@ const Logo: React.FC = () => {
       className="mb-4"
     >
       <img
-        src="public/uploads/logo.png"
+        src={logo}
         alt="Stage Consulting"
         className="h-6 sm:h-7"
       />
