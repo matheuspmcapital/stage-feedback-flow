@@ -11,8 +11,8 @@ const Logo: React.FC = () => {
       className="mb-4"
     >
       <img
-        src="https://nps.stage.consulting/_next/static/media/logo-stg.51abc93c.svg"
-        alt="Stage Consulting Logo"
+        src="public/uploads/logo.png"
+        alt="Stage Consulting"
         className="h-6 sm:h-7"
       />
     </motion.div>
