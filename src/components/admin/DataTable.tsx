@@ -17,7 +17,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface DataTableProps {
   responses: CodeResponse[];
@@ -79,6 +81,32 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
     );
   }, [responses, searchTerm]);
 
+  const handleExport = () => {
+    const exportData = filteredResponses.map((response) => {
+      const row: Record<string, string> = {
+        Name: response.name || "",
+        Email: response.email || "",
+        Company: response.company_name || "",
+        Project: response.project_name || "",
+      };
+      questionIds.forEach((qId) => {
+        const answer = response.answers.find((a) => a.question_id === qId);
+        let value = answer ? answer.answer : "";
+        if (qId === "recommend_score" || qId === "rehire_score") {
+          value = answer ? `${answer.answer}/10` : "";
+        }
+        row[getQuestionName(qId)] = value;
+      });
+      return row;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Responses");
+    const date = new Date().toISOString().split("T")[0];
+    XLSX.writeFile(workbook, `survey-responses-${date}.xlsx`);
+  };
+
   return (
     <Card className="bg-white dark:bg-gray-800">
       <CardHeader>
@@ -89,14 +117,20 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
               Complete record of all survey responses with details
             </CardDescription>
           </div>
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleExport} variant="default" className="gap-2">
+              <Download className="h-4 w-4" />
+              Export XLSX
+            </Button>
           </div>
         </div>
       </CardHeader>
