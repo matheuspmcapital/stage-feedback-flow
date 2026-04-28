@@ -125,7 +125,9 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
       matchesStatus = !code.started_at;
     }
 
-    return matchesSearch && matchesServiceType && matchesScope && matchesStatus;
+    const matchesSemester = filterSemester === "all" || getSemesterLabel(code.generated_at) === filterSemester;
+
+    return matchesSearch && matchesServiceType && matchesScope && matchesStatus && matchesSemester;
   });
 
   // Sort codes
