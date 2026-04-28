@@ -372,6 +372,9 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                       {formatDate(code.generated_at)}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
+                      {getSemesterLabel(code.generated_at)}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {calculateTimeSpent(code)}
                     </TableCell>
                     <TableCell>
