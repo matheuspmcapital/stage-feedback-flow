@@ -118,10 +118,6 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
     return { total, pending: total - completed, completed, responses: started, participation };
   }, [filteredDashboardCodes]);
 
-  const filteredAvgTime = useMemo(
-    () => calculateAverageResponseTime(filteredDashboardCodes),
-    [filteredDashboardCodes]
-  );
 
   const handleLogout = async () => {
     try {
