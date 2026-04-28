@@ -29,6 +29,12 @@ interface DataTableProps {
 
 const DataTable: React.FC<DataTableProps> = ({ responses }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [filterSemester, setFilterSemester] = React.useState<string>(getCurrentSemesterLabel());
+
+  const semesterOptions = useMemo(
+    () => buildSemesterOptions(responses.map(r => r.generated_at)),
+    [responses]
+  );
 
   // Extract all unique question IDs from the responses
   const questionIds = useMemo(() => {
