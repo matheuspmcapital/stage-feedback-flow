@@ -19,6 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Download } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getSemesterLabel, getCurrentSemesterLabel, buildSemesterOptions } from "@/lib/semester";
 import * as XLSX from "xlsx";
 
 interface DataTableProps {
