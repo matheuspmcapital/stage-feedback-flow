@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import NPSChart from "./NPSChart";
 import AdminSidebar from "./AdminSidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Session } from "@supabase/supabase-js";
 import GeneratedCodes from "./GeneratedCodes";
 import CompanyManagement from "./CompanyManagement";
 import ProjectManagement from "./ProjectManagement";
 import DataTable from "./DataTable";
 import { Scope } from '@/contexts/NPSContext';
+import { getSemesterLabel, getCurrentSemesterLabel, buildSemesterOptions } from "@/lib/semester";
 
 export interface CodeResponse {
   id: string;
