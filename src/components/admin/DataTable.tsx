@@ -174,7 +174,7 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
             <TableBody>
               {filteredResponses.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3 + questionIds.length} className="text-center py-8">
+                  <TableCell colSpan={4 + questionIds.length} className="text-center py-8">
                     No responses found
                   </TableCell>
                 </TableRow>
