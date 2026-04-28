@@ -189,6 +189,7 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
                     </TableCell>
                     <TableCell>{response.company_name}</TableCell>
                     <TableCell>{response.project_name}</TableCell>
+                    <TableCell>{getSemesterLabel(response.generated_at)}</TableCell>
                     {questionIds.map(questionId => {
                       const answer = response.answers.find(a => a.question_id === questionId);
                       let displayValue = answer ? answer.answer : "-";
