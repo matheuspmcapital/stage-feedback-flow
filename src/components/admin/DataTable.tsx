@@ -165,6 +165,7 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
                 <TableHead className="w-[180px] font-medium">Respondent</TableHead>
                 <TableHead className="w-[150px] font-medium">Company</TableHead>
                 <TableHead className="w-[150px] font-medium">Project</TableHead>
+                <TableHead className="w-[110px] font-medium">Semestre/Ano</TableHead>
                 {questionIds.map(id => (
                   <TableHead key={id} className="font-medium">{getQuestionName(id)}</TableHead>
                 ))}
