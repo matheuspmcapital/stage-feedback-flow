@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Eye, ClipboardCopy, Link } from "lucide-react";
+import { getSemesterLabel, getCurrentSemesterLabel, buildSemesterOptions } from "@/lib/semester";
 
 interface GeneratedCodesProps {
   codes: Code[];
