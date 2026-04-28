@@ -80,14 +80,17 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
 
   // Filter responses based on search term
   const filteredResponses = useMemo(() => {
-    return responses.filter(response => 
-      (response.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-       response.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       response.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       response.project_name?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-  }, [responses, searchTerm]);
+    return responses.filter(response => {
+      const matchesSearch =
+        response.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        response.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        response.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        response.project_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSemester =
+        filterSemester === "all" || getSemesterLabel(response.generated_at) === filterSemester;
+      return matchesSearch && matchesSemester;
+    });
+  }, [responses, searchTerm, filterSemester]);
 
   const handleExport = () => {
     const exportData = filteredResponses.map((response) => {
