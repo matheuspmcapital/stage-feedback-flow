@@ -263,6 +263,18 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                 </SelectContent>
               </Select>
 
+              <Select value={filterSemester} onValueChange={setFilterSemester}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Semestre/Ano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos Semestres</SelectItem>
+                  {semesterOptions.map(opt => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Button variant="outline" size="icon">
                 <SlidersHorizontal className="h-4 w-4" />
               </Button>
