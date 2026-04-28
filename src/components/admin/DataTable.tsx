@@ -99,6 +99,7 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
         Email: response.email || "",
         Company: response.company_name || "",
         Project: response.project_name || "",
+        "Semestre/Ano": getSemesterLabel(response.generated_at),
       };
       questionIds.forEach((qId) => {
         const answer = response.answers.find((a) => a.question_id === qId);
