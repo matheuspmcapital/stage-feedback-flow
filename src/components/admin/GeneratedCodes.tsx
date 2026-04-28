@@ -401,7 +401,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
 
                 {paginatedCodes.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
+                    <TableCell colSpan={9} className="h-24 text-center">
                       No codes found.
                     </TableCell>
                   </TableRow>
