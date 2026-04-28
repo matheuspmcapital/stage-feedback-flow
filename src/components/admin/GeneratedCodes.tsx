@@ -311,6 +311,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                   <TableHead className="cursor-pointer hidden lg:table-cell" onClick={() => toggleSort("generated_at")}>
                     Generated {sortField === "generated_at" && <ArrowUpDown className="ml-2 h-4 w-4 inline" />}
                   </TableHead>
+                  <TableHead className="hidden lg:table-cell">Semestre/Ano</TableHead>
                   <TableHead className="hidden lg:table-cell">Time Spent</TableHead>
                   <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
