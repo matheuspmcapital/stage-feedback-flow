@@ -177,6 +177,11 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
     return `${avgTimeInMinutes} min ${avgTimeInSeconds} sec`;
   };
 
+  const filteredAvgTime = useMemo(
+    () => calculateAverageResponseTime(filteredDashboardCodes),
+    [filteredDashboardCodes]
+  );
+
   useEffect(() => {
     const fetchData = async () => {
       try {
