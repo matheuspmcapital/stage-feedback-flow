@@ -54,7 +54,12 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
   const [sortField, setSortField] = useState<string>("generated_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+  const [filterSemester, setFilterSemester] = useState<string>(getCurrentSemesterLabel());
 
+  const semesterOptions = React.useMemo(
+    () => buildSemesterOptions(codes.map(c => c.generated_at)),
+    [codes]
+  );
 
   const pageSize = 10;
   const [currentPage, setCurrentPage] = useState(1);
