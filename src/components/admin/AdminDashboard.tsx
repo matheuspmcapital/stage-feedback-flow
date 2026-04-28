@@ -88,7 +88,40 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
   const [averageResponseTime, setAverageResponseTime] = useState<string>("--");
   const [userRole, setUserRole] = useState<string>("partner");
   const [userEmail, setUserEmail] = useState<string>("");
+  const [dashboardSemester, setDashboardSemester] = useState<string>(getCurrentSemesterLabel());
   const { toast } = useToast();
+
+  const semesterOptions = useMemo(
+    () => buildSemesterOptions(codes.map(c => c.generated_at)),
+    [codes]
+  );
+
+  const filteredDashboardCodes = useMemo(
+    () => dashboardSemester === "all"
+      ? codes
+      : codes.filter(c => getSemesterLabel(c.generated_at) === dashboardSemester),
+    [codes, dashboardSemester]
+  );
+
+  const filteredDashboardResponses = useMemo(
+    () => dashboardSemester === "all"
+      ? codeResponses
+      : codeResponses.filter(r => getSemesterLabel(r.generated_at) === dashboardSemester),
+    [codeResponses, dashboardSemester]
+  );
+
+  const filteredStats = useMemo(() => {
+    const total = filteredDashboardCodes.length;
+    const started = filteredDashboardCodes.filter(c => c.started_at).length;
+    const completed = filteredDashboardCodes.filter(c => c.completed_at).length;
+    const participation = total > 0 ? Math.round((started / total) * 100) : 0;
+    return { total, pending: total - completed, completed, responses: started, participation };
+  }, [filteredDashboardCodes]);
+
+  const filteredAvgTime = useMemo(
+    () => calculateAverageResponseTime(filteredDashboardCodes),
+    [filteredDashboardCodes]
+  );
 
   const handleLogout = async () => {
     try {
