@@ -22,6 +22,7 @@ export interface CodeResponse {
   completed: boolean;
   started_at: string;
   completed_at: string;
+  generated_at: string;
   service_type: string;
   score?: number;
   answers: {
@@ -243,6 +244,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
               completed: code.completed_at !== null,
               started_at: code.started_at || '',
               completed_at: code.completed_at || '',
+              generated_at: code.generated_at,
               service_type: code.service_type,
               score: undefined,
               answers: codeAnswers
