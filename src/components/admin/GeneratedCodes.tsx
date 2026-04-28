@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Eye, ClipboardCopy, Link } from "lucide-react";
+import { getSemesterLabel, getCurrentSemesterLabel, buildSemesterOptions } from "@/lib/semester";
 
 interface GeneratedCodesProps {
   codes: Code[];
@@ -53,7 +54,12 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
   const [sortField, setSortField] = useState<string>("generated_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+  const [filterSemester, setFilterSemester] = useState<string>(getCurrentSemesterLabel());
 
+  const semesterOptions = React.useMemo(
+    () => buildSemesterOptions(codes.map(c => c.generated_at)),
+    [codes]
+  );
 
   const pageSize = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -119,7 +125,9 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
       matchesStatus = !code.started_at;
     }
 
-    return matchesSearch && matchesServiceType && matchesScope && matchesStatus;
+    const matchesSemester = filterSemester === "all" || getSemesterLabel(code.generated_at) === filterSemester;
+
+    return matchesSearch && matchesServiceType && matchesScope && matchesStatus && matchesSemester;
   });
 
   // Sort codes
@@ -255,6 +263,18 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                 </SelectContent>
               </Select>
 
+              <Select value={filterSemester} onValueChange={setFilterSemester}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Semestre/Ano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos Semestres</SelectItem>
+                  {semesterOptions.map(opt => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Button variant="outline" size="icon">
                 <SlidersHorizontal className="h-4 w-4" />
               </Button>
@@ -291,6 +311,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                   <TableHead className="cursor-pointer hidden lg:table-cell" onClick={() => toggleSort("generated_at")}>
                     Generated {sortField === "generated_at" && <ArrowUpDown className="ml-2 h-4 w-4 inline" />}
                   </TableHead>
+                  <TableHead className="hidden lg:table-cell">Semestre/Ano</TableHead>
                   <TableHead className="hidden lg:table-cell">Time Spent</TableHead>
                   <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
@@ -351,6 +372,9 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
                       {formatDate(code.generated_at)}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
+                      {getSemesterLabel(code.generated_at)}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       {calculateTimeSpent(code)}
                     </TableCell>
                     <TableCell>
@@ -377,7 +401,7 @@ const GeneratedCodes: React.FC<GeneratedCodesProps> = ({
 
                 {paginatedCodes.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
+                    <TableCell colSpan={9} className="h-24 text-center">
                       No codes found.
                     </TableCell>
                   </TableRow>

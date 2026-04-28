@@ -19,6 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Download } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getSemesterLabel, getCurrentSemesterLabel, buildSemesterOptions } from "@/lib/semester";
 import * as XLSX from "xlsx";
 
 interface DataTableProps {
@@ -27,6 +29,12 @@ interface DataTableProps {
 
 const DataTable: React.FC<DataTableProps> = ({ responses }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [filterSemester, setFilterSemester] = React.useState<string>(getCurrentSemesterLabel());
+
+  const semesterOptions = useMemo(
+    () => buildSemesterOptions(responses.map(r => r.generated_at)),
+    [responses]
+  );
 
   // Extract all unique question IDs from the responses
   const questionIds = useMemo(() => {
@@ -72,14 +80,17 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
 
   // Filter responses based on search term
   const filteredResponses = useMemo(() => {
-    return responses.filter(response => 
-      (response.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-       response.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       response.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       response.project_name?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-  }, [responses, searchTerm]);
+    return responses.filter(response => {
+      const matchesSearch =
+        response.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        response.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        response.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        response.project_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSemester =
+        filterSemester === "all" || getSemesterLabel(response.generated_at) === filterSemester;
+      return matchesSearch && matchesSemester;
+    });
+  }, [responses, searchTerm, filterSemester]);
 
   const handleExport = () => {
     const exportData = filteredResponses.map((response) => {
@@ -88,6 +99,7 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
         Email: response.email || "",
         Company: response.company_name || "",
         Project: response.project_name || "",
+        "Semestre/Ano": getSemesterLabel(response.generated_at),
       };
       questionIds.forEach((qId) => {
         const answer = response.answers.find((a) => a.question_id === qId);
@@ -127,6 +139,17 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <Select value={filterSemester} onValueChange={setFilterSemester}>
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue placeholder="Semestre/Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos Semestres</SelectItem>
+                {semesterOptions.map(opt => (
+                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button onClick={handleExport} variant="default" className="gap-2">
               <Download className="h-4 w-4" />
               Export XLSX
@@ -142,6 +165,7 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
                 <TableHead className="w-[180px] font-medium">Respondent</TableHead>
                 <TableHead className="w-[150px] font-medium">Company</TableHead>
                 <TableHead className="w-[150px] font-medium">Project</TableHead>
+                <TableHead className="w-[110px] font-medium">Semestre/Ano</TableHead>
                 {questionIds.map(id => (
                   <TableHead key={id} className="font-medium">{getQuestionName(id)}</TableHead>
                 ))}
@@ -150,7 +174,7 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
             <TableBody>
               {filteredResponses.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3 + questionIds.length} className="text-center py-8">
+                  <TableCell colSpan={4 + questionIds.length} className="text-center py-8">
                     No responses found
                   </TableCell>
                 </TableRow>
@@ -165,6 +189,7 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
                     </TableCell>
                     <TableCell>{response.company_name}</TableCell>
                     <TableCell>{response.project_name}</TableCell>
+                    <TableCell>{getSemesterLabel(response.generated_at)}</TableCell>
                     {questionIds.map(questionId => {
                       const answer = response.answers.find(a => a.question_id === questionId);
                       let displayValue = answer ? answer.answer : "-";

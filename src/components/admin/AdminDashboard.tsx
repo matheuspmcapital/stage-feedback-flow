@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import NPSChart from "./NPSChart";
 import AdminSidebar from "./AdminSidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Session } from "@supabase/supabase-js";
 import GeneratedCodes from "./GeneratedCodes";
 import CompanyManagement from "./CompanyManagement";
 import ProjectManagement from "./ProjectManagement";
 import DataTable from "./DataTable";
 import { Scope } from '@/contexts/NPSContext';
+import { getSemesterLabel, getCurrentSemesterLabel, buildSemesterOptions } from "@/lib/semester";
 
 export interface CodeResponse {
   id: string;
@@ -22,6 +24,7 @@ export interface CodeResponse {
   completed: boolean;
   started_at: string;
   completed_at: string;
+  generated_at: string;
   service_type: string;
   score?: number;
   answers: {
@@ -85,7 +88,36 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
   const [averageResponseTime, setAverageResponseTime] = useState<string>("--");
   const [userRole, setUserRole] = useState<string>("partner");
   const [userEmail, setUserEmail] = useState<string>("");
+  const [dashboardSemester, setDashboardSemester] = useState<string>(getCurrentSemesterLabel());
   const { toast } = useToast();
+
+  const semesterOptions = useMemo(
+    () => buildSemesterOptions(codes.map(c => c.generated_at)),
+    [codes]
+  );
+
+  const filteredDashboardCodes = useMemo(
+    () => dashboardSemester === "all"
+      ? codes
+      : codes.filter(c => getSemesterLabel(c.generated_at) === dashboardSemester),
+    [codes, dashboardSemester]
+  );
+
+  const filteredDashboardResponses = useMemo(
+    () => dashboardSemester === "all"
+      ? codeResponses
+      : codeResponses.filter(r => getSemesterLabel(r.generated_at) === dashboardSemester),
+    [codeResponses, dashboardSemester]
+  );
+
+  const filteredStats = useMemo(() => {
+    const total = filteredDashboardCodes.length;
+    const started = filteredDashboardCodes.filter(c => c.started_at).length;
+    const completed = filteredDashboardCodes.filter(c => c.completed_at).length;
+    const participation = total > 0 ? Math.round((started / total) * 100) : 0;
+    return { total, pending: total - completed, completed, responses: started, participation };
+  }, [filteredDashboardCodes]);
+
 
   const handleLogout = async () => {
     try {
@@ -144,6 +176,11 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
 
     return `${avgTimeInMinutes} min ${avgTimeInSeconds} sec`;
   };
+
+  const filteredAvgTime = useMemo(
+    () => calculateAverageResponseTime(filteredDashboardCodes),
+    [filteredDashboardCodes]
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -243,6 +280,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
               completed: code.completed_at !== null,
               started_at: code.started_at || '',
               completed_at: code.completed_at || '',
+              generated_at: code.generated_at,
               service_type: code.service_type,
               score: undefined,
               answers: codeAnswers
@@ -302,47 +340,63 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
       <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
         <Tabs value={activeSection} className="space-y-6">
           <TabsContent value="dashboard" className="space-y-6">
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h1 className="text-3xl font-bold">Dashboard</h1>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Semestre/Ano</span>
+                <Select value={dashboardSemester} onValueChange={setDashboardSemester}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Semestre/Ano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {semesterOptions.map(opt => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/30 border-blue-200 dark:border-blue-700/50">
                 <CardHeader>
-                  <CardTitle className="text-blue-800 dark:text-blue-300">{stats.total}</CardTitle>
+                  <CardTitle className="text-blue-800 dark:text-blue-300">{filteredStats.total}</CardTitle>
                   <CardDescription>Total Codes Generated</CardDescription>
                 </CardHeader>
               </Card>
 
               <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/30 border-purple-200 dark:border-purple-700/50">
                 <CardHeader>
-                  <CardTitle className="text-purple-800 dark:text-purple-300">{stats.responses}</CardTitle>
+                  <CardTitle className="text-purple-800 dark:text-purple-300">{filteredStats.responses}</CardTitle>
                   <CardDescription>Survey Responses</CardDescription>
                 </CardHeader>
               </Card>
 
               <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/30 border-green-200 dark:border-green-700/50">
                 <CardHeader>
-                  <CardTitle className="text-green-800 dark:text-green-300">{stats.participation}%</CardTitle>
+                  <CardTitle className="text-green-800 dark:text-green-300">{filteredStats.participation}%</CardTitle>
                   <CardDescription>Participation Rate</CardDescription>
                 </CardHeader>
               </Card>
 
               <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/30 border-amber-200 dark:border-amber-700/50">
                 <CardHeader>
-                  <CardTitle className="text-amber-800 dark:text-amber-300">{stats.completed}</CardTitle>
+                  <CardTitle className="text-amber-800 dark:text-amber-300">{filteredStats.completed}</CardTitle>
                   <CardDescription>Completed Surveys</CardDescription>
                 </CardHeader>
               </Card>
 
               <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/30 border-red-200 dark:border-red-700/50">
                 <CardHeader>
-                  <CardTitle className="text-red-800 dark:text-red-300">{stats.pending}</CardTitle>
+                  <CardTitle className="text-red-800 dark:text-red-300">{filteredStats.pending}</CardTitle>
                   <CardDescription>Pending Responses</CardDescription>
                 </CardHeader>
               </Card>
 
               <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/30 border-indigo-200 dark:border-indigo-700/50">
                 <CardHeader>
-                  <CardTitle className="text-indigo-800 dark:text-indigo-300">{averageResponseTime}</CardTitle>
+                  <CardTitle className="text-indigo-800 dark:text-indigo-300">{filteredAvgTime}</CardTitle>
                   <CardDescription>Average Response Time</CardDescription>
                 </CardHeader>
               </Card>
@@ -351,7 +405,7 @@ const AdminDashboard: React.FC<{ session: Session | null }> = ({ session }) => {
             <div className="grid grid-cols-1 gap-6">
               <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <div className="p-6">
-                  <NPSChart responses={codeResponses} />
+                  <NPSChart responses={filteredDashboardResponses} />
                 </div>
               </Card>
             </div>
