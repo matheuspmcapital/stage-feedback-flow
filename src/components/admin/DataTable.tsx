@@ -139,6 +139,17 @@ const DataTable: React.FC<DataTableProps> = ({ responses }) => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <Select value={filterSemester} onValueChange={setFilterSemester}>
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue placeholder="Semestre/Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos Semestres</SelectItem>
+                {semesterOptions.map(opt => (
+                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button onClick={handleExport} variant="default" className="gap-2">
               <Download className="h-4 w-4" />
               Export XLSX
